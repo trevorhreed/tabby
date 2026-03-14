@@ -1,0 +1,72 @@
+name: Publish to Chrome Web Store
+
+on:
+  push:
+    branches: [release]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get version from manifest
+        id: version
+        run: echo "version=$(jq -r .version manifest.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Create ZIP package
+        run: |
+          zip -r extension.zip . \
+            -x ".git/*" \
+            -x ".github/*" \
+            -x ".gitignore" \
+            -x ".DS_Store" \
+            -x "store/*"
+
+      - name: Get access token
+        id: token
+        run: |
+          RESPONSE=$(curl -s -X POST https://oauth2.googleapis.com/token \
+            -d "client_id=${{ secrets.CHROME_CLIENT_ID }}" \
+            -d "client_secret=${{ secrets.CHROME_CLIENT_SECRET }}" \
+            -d "refresh_token=${{ secrets.CHROME_REFRESH_TOKEN }}" \
+            -d "grant_type=refresh_token")
+          ACCESS_TOKEN=$(echo "$RESPONSE" | jq -r '.access_token')
+          if [ "$ACCESS_TOKEN" = "null" ] || [ -z "$ACCESS_TOKEN" ]; then
+            echo "Failed to get access token"
+            echo "$RESPONSE"
+            exit 1
+          fi
+          echo "::add-mask::$ACCESS_TOKEN"
+          echo "access_token=$ACCESS_TOKEN" >> "$GITHUB_OUTPUT"
+
+      - name: Upload to Chrome Web Store
+        run: |
+          RESPONSE=$(curl -s -w "\n%{http_code}" \
+            -X POST \
+            "https://www.googleapis.com/upload/v2/publishers/${{ secrets.CHROME_PUBLISHER_ID }}/items/${{ secrets.CHROME_EXTENSION_ID }}:upload" \
+            -H "Authorization: Bearer ${{ steps.token.outputs.access_token }}" \
+            -H "Content-Type: application/zip" \
+            --data-binary @extension.zip)
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | head -n -1)
+          echo "$BODY"
+          if [ "$HTTP_CODE" -ge 400 ]; then
+            echo "Upload failed with status $HTTP_CODE"
+            exit 1
+          fi
+
+      - name: Publish extension
+        run: |
+          RESPONSE=$(curl -s -w "\n%{http_code}" \
+            -X POST \
+            "https://www.googleapis.com/v2/publishers/${{ secrets.CHROME_PUBLISHER_ID }}/items/${{ secrets.CHROME_EXTENSION_ID }}:publish" \
+            -H "Authorization: Bearer ${{ steps.token.outputs.access_token }}")
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | head -n -1)
+          echo "$BODY"
+          if [ "$HTTP_CODE" -ge 400 ]; then
+            echo "Publish failed with status $HTTP_CODE"
+            exit 1
+          fi
+          echo "Published version ${{ steps.version.outputs.version }}"
