@@ -10,6 +10,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Bump patch version
+        run: |
+          VERSION=$(jq -r .version manifest.json)
+          MAJOR_MINOR=$(echo "$VERSION" | cut -d. -f1,2)
+          PATCH=$(echo "$VERSION" | cut -d. -f3)
+          NEW_VERSION="${MAJOR_MINOR}.$((PATCH + 1))"
+          jq --arg v "$NEW_VERSION" '.version = $v' manifest.json > manifest.tmp && mv manifest.tmp manifest.json
+          echo "Version: $VERSION -> $NEW_VERSION"
+
       - name: Create ZIP package
         run: |
           zip -r extension.zip . \
