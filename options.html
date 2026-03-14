@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
   <head>
     <title>Tabby Options</title>
-    <link rel="icon" type="image/png" sizes="32x32" href="icons/icon48.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="icons/icon16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/icon48.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="icons/icon16.png" />
     <style>
       :root {
         --primary-color: #6366f1;
@@ -52,7 +52,8 @@
       }
 
       body {
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         margin: 0;
         padding: 20px;
         background-color: var(--bg-color);
@@ -198,8 +199,13 @@
       }
 
       @keyframes placeholder-pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.6; }
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.6;
+        }
       }
 
       .group-header input[type="text"] {
@@ -360,46 +366,75 @@
   <body>
     <div class="container">
       <h1>Tabby Options</h1>
-      
-      <div style="text-align: center; margin-bottom: 30px;">
-        <button id="save-btn" class="btn btn-success" data-action="save" disabled style="font-size: 16px; padding: 12px 30px;">Save All Changes</button>
+
+      <div style="text-align: center; margin-bottom: 30px">
+        <button
+          id="save-btn"
+          class="btn btn-success"
+          data-action="save"
+          disabled
+          style="font-size: 16px; padding: 12px 30px"
+        >
+          Save All Changes
+        </button>
       </div>
-      
+
       <div class="settings-section">
         <h2>Display Settings</h2>
         <div class="setting-item">
           <label>
-            <input type="checkbox" id="show-links"> 
+            <input type="checkbox" id="show-links" />
             Show Links
           </label>
-          <small style="color: var(--text-muted); margin-left: 10px;">Hide all link groups to show only the background</small>
+          <small style="color: var(--text-muted); margin-left: 10px"
+            >Hide all link groups to show only the background</small
+          >
         </div>
         <div class="setting-item">
           <label>
-            <input type="checkbox" id="show-clock"> 
+            <input type="checkbox" id="show-clock" />
             Show Clock
           </label>
-          <small style="color: var(--text-muted); margin-left: 10px;">Display the time in the bottom right corner</small>
+          <small style="color: var(--text-muted); margin-left: 10px"
+            >Display the time in the bottom right corner</small
+          >
         </div>
       </div>
-      
-      <h2 style="color: var(--primary-color); margin: 30px 0 20px 0; font-size: 18px;">Link Groups</h2>
-      
+
+      <h2
+        style="
+          color: var(--primary-color);
+          margin: 30px 0 20px 0;
+          font-size: 18px;
+        "
+      >
+        Link Groups
+      </h2>
+
       <div class="actions">
-        <button class="btn btn-primary" data-action="add-group">Add Group</button>
+        <button class="btn btn-primary" data-action="add-group">
+          Add Group
+        </button>
         <button class="btn btn-danger" data-action="clear-groups">Clear</button>
       </div>
 
       <div id="groups-container"></div>
 
       <div class="import-export">
-        <h3 style="color: var(--primary-color);">Import/Export Data</h3>
+        <h3 style="color: var(--primary-color)">Import/Export Data</h3>
         <p>You can backup your data or import from a backup:</p>
-        <div style="margin-bottom: 15px;">
-          <button class="btn btn-primary" data-action="export">Export Data</button>
-          <button class="btn btn-primary" data-action="import">Import Data</button>
+        <div style="margin-bottom: 15px">
+          <button class="btn btn-primary" data-action="export">
+            Export Data
+          </button>
+          <button class="btn btn-primary" data-action="import">
+            Import Data
+          </button>
         </div>
-        <textarea id="import-export-text" placeholder="Paste your exported data here for import..."></textarea>
+        <textarea
+          id="import-export-text"
+          placeholder="Paste your exported data here for import..."
+        ></textarea>
       </div>
     </div>
 
