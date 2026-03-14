@@ -10,10 +10,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Get version from manifest
-        id: version
-        run: echo "version=$(jq -r .version manifest.json)" >> "$GITHUB_OUTPUT"
-
       - name: Create ZIP package
         run: |
           zip -r extension.zip . \
@@ -23,49 +19,10 @@ jobs:
             -x ".DS_Store" \
             -x "store/*"
 
-      - name: Get access token
-        id: token
-        run: |
-          RESPONSE=$(curl -s -X POST https://oauth2.googleapis.com/token \
-            -d "client_id=${{ secrets.CHROME_CLIENT_ID }}" \
-            -d "client_secret=${{ secrets.CHROME_CLIENT_SECRET }}" \
-            -d "refresh_token=${{ secrets.CHROME_REFRESH_TOKEN }}" \
-            -d "grant_type=refresh_token")
-          ACCESS_TOKEN=$(echo "$RESPONSE" | jq -r '.access_token')
-          if [ "$ACCESS_TOKEN" = "null" ] || [ -z "$ACCESS_TOKEN" ]; then
-            echo "Failed to get access token"
-            echo "$RESPONSE"
-            exit 1
-          fi
-          echo "::add-mask::$ACCESS_TOKEN"
-          echo "access_token=$ACCESS_TOKEN" >> "$GITHUB_OUTPUT"
-
-      - name: Upload to Chrome Web Store
-        run: |
-          RESPONSE=$(curl -s -w "\n%{http_code}" \
-            -H "Authorization: Bearer ${{ steps.token.outputs.access_token }}" \
-            -X POST \
-            -T extension.zip \
-            "https://chromewebstore.googleapis.com/upload/v2/publishers/${{ secrets.CHROME_PUBLISHER_ID }}/items/${{ secrets.CHROME_EXTENSION_ID }}:upload")
-          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
-          BODY=$(echo "$RESPONSE" | head -n -1)
-          echo "$BODY"
-          if [ "$HTTP_CODE" -ge 400 ]; then
-            echo "Upload failed with status $HTTP_CODE"
-            exit 1
-          fi
-
-      - name: Publish extension
-        run: |
-          RESPONSE=$(curl -s -w "\n%{http_code}" \
-            -X POST \
-            "https://chromewebstore.googleapis.com/v2/publishers/${{ secrets.CHROME_PUBLISHER_ID }}/items/${{ secrets.CHROME_EXTENSION_ID }}:publish" \
-            -H "Authorization: Bearer ${{ steps.token.outputs.access_token }}")
-          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
-          BODY=$(echo "$RESPONSE" | head -n -1)
-          echo "$BODY"
-          if [ "$HTTP_CODE" -ge 400 ]; then
-            echo "Publish failed with status $HTTP_CODE"
-            exit 1
-          fi
-          echo "Published version ${{ steps.version.outputs.version }}"
+      - name: Upload and publish
+        run: npx -y chrome-webstore-upload-cli@3.5.0 upload --source extension.zip --auto-publish
+        env:
+          EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
+          CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
+          REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
