@@ -43,11 +43,10 @@ jobs:
       - name: Upload to Chrome Web Store
         run: |
           RESPONSE=$(curl -s -w "\n%{http_code}" \
-            -X POST \
-            "https://www.googleapis.com/upload/v2/publishers/${{ secrets.CHROME_PUBLISHER_ID }}/items/${{ secrets.CHROME_EXTENSION_ID }}:upload" \
             -H "Authorization: Bearer ${{ steps.token.outputs.access_token }}" \
-            -H "Content-Type: application/zip" \
-            --data-binary @extension.zip)
+            -X POST \
+            -T extension.zip \
+            "https://chromewebstore.googleapis.com/upload/v2/publishers/${{ secrets.CHROME_PUBLISHER_ID }}/items/${{ secrets.CHROME_EXTENSION_ID }}:upload")
           HTTP_CODE=$(echo "$RESPONSE" | tail -1)
           BODY=$(echo "$RESPONSE" | head -n -1)
           echo "$BODY"
@@ -60,7 +59,7 @@ jobs:
         run: |
           RESPONSE=$(curl -s -w "\n%{http_code}" \
             -X POST \
-            "https://www.googleapis.com/v2/publishers/${{ secrets.CHROME_PUBLISHER_ID }}/items/${{ secrets.CHROME_EXTENSION_ID }}:publish" \
+            "https://chromewebstore.googleapis.com/v2/publishers/${{ secrets.CHROME_PUBLISHER_ID }}/items/${{ secrets.CHROME_EXTENSION_ID }}:publish" \
             -H "Authorization: Bearer ${{ steps.token.outputs.access_token }}")
           HTTP_CODE=$(echo "$RESPONSE" | tail -1)
           BODY=$(echo "$RESPONSE" | head -n -1)
