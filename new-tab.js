@@ -50,7 +50,9 @@ async function loadData() {
 }
 
 const getSeason = () => {
-  const month = new Date().getMonth() + 1;
+  const now = new Date();
+  const month = now.getMonth() + 1;
+  const day = now.getDate();
   if (month === 1) return "winter";
   if (month === 2) return Math.random() < 0.8 ? "winter" : "spring";
   if (month === 3) return Math.random() < 0.2 ? "winter" : "spring";
@@ -62,13 +64,17 @@ const getSeason = () => {
   if (month === 9) return Math.random() < 0.2 ? "summer" : "autumn";
   if (month === 10) return "autumn";
   if (month === 11) return Math.random() < 0.8 ? "autumn" : "winter";
-  if (month === 12) return Math.random() < 0.2 ? "autumn" : "winter";
+  if (month === 12) {
+    if (day >= 1 && day <= 25 && Math.random() < day * 0.04) return "christmas";
+    return Math.random() < 0.2 ? "autumn" : "winter";
+  }
   return "winter";
 };
 
 const getBackgroundImage = () => {
-  const randomIndex = Math.floor(Math.random() * MAX_IMAGE_INDEX) + 1;
   const randomCategory = getSeason();
+  const maxIndex = randomCategory === "christmas" ? MAX_CHRISTMAS_INDEX : MAX_IMAGE_INDEX;
+  const randomIndex = Math.floor(Math.random() * maxIndex) + 1;
   return `images/${randomCategory}/img_${("" + randomIndex).padStart(2, "0")}.jpg`;
 };
 
