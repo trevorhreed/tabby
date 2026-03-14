@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Tabby</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/icon48.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="icons/icon16.png">
+    <style>
+      :root {
+        /* --image: url('RANDOMLY GENERATED'); */
+        --background: #3338;
+        --text: #ccc;
+        --text-hover: #ccc3;
+        --panel-background: #000c;
+        --font-size: 20px;
+      }
+      html,
+      body {
+        box-sizing: border-box;
+        font-family: Helvetica, sans-serif;
+        font-size: var(--font-size);
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+      }
+
+      body {
+        background: var(--background);
+        background-image: var(--image);
+        background-position: center;
+        background-repeat: no-repeat;
+        background-size: cover;
+        color: var(--text);
+      }
+
+      a.link {
+        display: inline-block;
+        color: var(--text);
+        text-decoration: none;
+        padding: 0.5rem 1rem 0.5rem;
+        border-radius: 0.5rem;
+        transition: background-color 0.3s, color 0.3s;
+
+        &:hover {
+          color: var(--text-hover);
+          background-color: var(--text-hover);
+        }
+      }
+
+      .panel {
+        background: var(--panel-background);
+        /* box-shadow: 0 0 1em #000; */
+        border-radius: 1em;
+        padding: 1rem;
+        max-height: 100%;
+        overflow: auto;
+      }
+
+      .link-groups {
+        display: inline-block;
+        overflow: auto;
+        max-height: 100%;
+        box-sizing: border-box;
+        border-top-left-radius: 0;
+        border-top-right-radius: 0;
+        border-bottom-left-radius: 0;
+
+        & .group {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          margin: 0 0 1.8rem;
+
+          & label {
+            opacity: 0.6;
+            display: inline;
+            padding: 0.5rem 1rem;
+            color: var(--text);
+            border-top-left-radius: 0.5rem;
+            border-top-right-radius: 0.5rem;
+          }
+
+          & .links {
+            display: flex;
+            flex-direction: row;
+            gap: 0.5rem;
+            border-top-right-radius: 0.5rem;
+            border-bottom-left-radius: 0.5rem;
+            border-bottom-right-radius: 0.5rem;
+
+            & a {
+              display: inline-block;
+              color: var(--text);
+              text-decoration: none;
+              cursor: pointer;
+            }
+          }
+
+          &:last-child {
+            margin: 0 0 0.5rem;
+          }
+        }
+      }
+
+      .clock {
+        position: fixed;
+        bottom: 0rem;
+        right: 0rem;
+        border-top-right-radius: 0;
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+
+        & span {
+          font-size: 3rem;
+        }
+      }
+
+      .settings-link {
+        position: fixed;
+        top: 1rem;
+        right: 1rem;
+        color: var(--text);
+        opacity: 0.6;
+        cursor: pointer;
+        padding: 0.5rem;
+        border-radius: 0.5rem;
+        transition: opacity 0.3s, transform 0.3s;
+        font-size: 1.5rem;
+        text-decoration: none;
+      }
+
+      .settings-link:hover {
+        opacity: 1;
+        transform: rotate(90deg);
+      }
+    </style>
+  </head>
+  <body>
+    <a id="settings-link" class="settings-link" title="Options">&#9881;</a>
+    <section id="link-groups" class="link-groups panel"></section>
+    <section id="clock" class="clock panel"><span></span></section>
+    <script src="new-tab.js"></script>
+  </body>
+</html>

@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Tabby Options</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/icon48.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="icons/icon16.png">
+    <style>
+      :root {
+        --primary-color: #6366f1;
+        --primary-hover: #4f46e5;
+        --bg-color: #f8f9fa;
+        --container-bg: #ffffff;
+        --secondary-color: #f5f5f5;
+        --text-color: #333;
+        --text-muted: #666;
+        --border-color: #ddd;
+        --input-bg: #ffffff;
+        --link-bg: #fafafa;
+        --danger-color: #e74c3c;
+        --danger-hover: #c0392b;
+        --success-color: #2ecc71;
+        --success-hover: #27ae60;
+        --shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        --disabled-bg: #ccc;
+        --disabled-text: #666;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --primary-color: #818cf8;
+          --primary-hover: #6366f1;
+          --bg-color: #1a1a2e;
+          --container-bg: #16213e;
+          --secondary-color: #1e2a4a;
+          --text-color: #e4e4e7;
+          --text-muted: #a1a1aa;
+          --border-color: #3f3f5a;
+          --input-bg: #1e2a4a;
+          --link-bg: #1e2a4a;
+          --danger-color: #f87171;
+          --danger-hover: #ef4444;
+          --success-color: #4ade80;
+          --success-hover: #22c55e;
+          --shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+          --disabled-bg: #3f3f5a;
+          --disabled-text: #71717a;
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+      }
+
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        background: var(--container-bg);
+        border-radius: 8px;
+        box-shadow: var(--shadow);
+        padding: 30px;
+      }
+
+      h1 {
+        margin: 0 0 30px 0;
+        color: var(--primary-color);
+        border-bottom: 2px solid var(--secondary-color);
+        padding-bottom: 15px;
+      }
+
+      .actions {
+        margin-bottom: 30px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.3s;
+        text-decoration: none;
+        display: inline-block;
+      }
+
+      .btn-primary {
+        background-color: var(--primary-color);
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background-color: var(--primary-hover);
+      }
+
+      .btn-danger {
+        background-color: var(--danger-color);
+        color: white;
+      }
+
+      .btn-danger:hover {
+        background-color: var(--danger-hover);
+      }
+
+      .btn-success {
+        background-color: var(--success-color);
+        color: white;
+      }
+
+      .btn-success:hover {
+        background-color: var(--success-hover);
+      }
+
+      .btn:disabled {
+        background-color: var(--disabled-bg);
+        color: var(--disabled-text);
+        cursor: not-allowed;
+      }
+
+      .btn:disabled:hover {
+        background-color: var(--disabled-bg);
+      }
+
+      .group {
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        margin-bottom: 20px;
+        overflow: visible;
+        transition: opacity 0.2s;
+        position: relative;
+      }
+
+      .group.dragging {
+        opacity: 0.4;
+      }
+
+      .group-header {
+        background-color: var(--secondary-color);
+        padding: 15px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        border-radius: 8px 8px 0 0;
+      }
+
+      .drag-handle {
+        cursor: grab;
+        color: var(--text-muted);
+        font-size: 18px;
+        user-select: none;
+        padding: 5px;
+      }
+
+      .drag-handle:hover {
+        color: var(--primary-color);
+      }
+
+      .dragging .drag-handle {
+        cursor: grabbing;
+      }
+
+      /* Drag placeholders */
+      .drag-placeholder {
+        border: 2px dashed var(--primary-color);
+        border-radius: 8px;
+        background: rgba(99, 102, 241, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: placeholder-pulse 1s ease-in-out infinite;
+      }
+
+      .drag-placeholder-group {
+        min-height: 80px;
+        margin-bottom: 20px;
+      }
+
+      .drag-placeholder-link {
+        min-height: 50px;
+        margin-bottom: 15px;
+        border-radius: 5px;
+      }
+
+      .placeholder-inner {
+        color: var(--primary-color);
+        font-size: 14px;
+        font-weight: 500;
+        opacity: 0.8;
+      }
+
+      @keyframes placeholder-pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
+      }
+
+      .group-header input[type="text"] {
+        flex: 1;
+        padding: 8px 12px;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        font-size: 16px;
+        background-color: var(--input-bg);
+        color: var(--text-color);
+      }
+
+      .group-header input[type="checkbox"] {
+        transform: scale(1.2);
+      }
+
+      .group-content {
+        padding: 15px;
+      }
+
+      .link {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 15px;
+        padding: 10px;
+        background-color: var(--link-bg);
+        border-radius: 5px;
+        transition: opacity 0.2s;
+        position: relative;
+      }
+
+      .link.dragging {
+        opacity: 0.4;
+      }
+
+      .links-container {
+        min-height: 20px;
+        padding: 5px 0;
+      }
+
+      .link input[type="text"] {
+        flex: 1;
+        padding: 8px 12px;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        margin-right: 10px;
+        background-color: var(--input-bg);
+        color: var(--text-color);
+      }
+
+      .link input[type="url"] {
+        flex: 2;
+        padding: 8px 12px;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        margin-right: 10px;
+        background-color: var(--input-bg);
+        color: var(--text-color);
+      }
+
+      .link input[type="checkbox"] {
+        transform: scale(1.2);
+      }
+
+      .link-actions {
+        display: flex;
+        gap: 5px;
+      }
+
+      .btn-small {
+        padding: 5px 10px;
+        font-size: 12px;
+        min-width: auto;
+      }
+
+      .add-link-area {
+        margin-top: 15px;
+        padding: 15px;
+        background-color: var(--secondary-color);
+        border-radius: 5px;
+      }
+
+      .status {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 10px 20px;
+        border-radius: 5px;
+        color: white;
+        font-weight: bold;
+        opacity: 0;
+        transition: opacity 0.3s;
+        z-index: 1000;
+      }
+
+      .status.success {
+        background-color: var(--success-color);
+      }
+
+      .status.error {
+        background-color: var(--danger-color);
+      }
+
+      .status.show {
+        opacity: 1;
+      }
+
+      .settings-section {
+        margin-bottom: 30px;
+        padding: 20px;
+        background-color: var(--secondary-color);
+        border-radius: 8px;
+      }
+
+      .settings-section h2 {
+        margin: 0 0 20px 0;
+        color: var(--primary-color);
+        font-size: 18px;
+      }
+
+      .setting-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 15px;
+      }
+
+      .setting-item label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        font-weight: 500;
+      }
+
+      .setting-item input[type="checkbox"] {
+        transform: scale(1.2);
+      }
+
+      .import-export h3 {
+        margin-top: 0;
+      }
+
+      textarea {
+        width: 100%;
+        height: 200px;
+        padding: 10px;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 12px;
+        background-color: var(--input-bg);
+        color: var(--text-color);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Tabby Options</h1>
+      
+      <div style="text-align: center; margin-bottom: 30px;">
+        <button id="save-btn" class="btn btn-success" data-action="save" disabled style="font-size: 16px; padding: 12px 30px;">Save All Changes</button>
+      </div>
+      
+      <div class="settings-section">
+        <h2>Display Settings</h2>
+        <div class="setting-item">
+          <label>
+            <input type="checkbox" id="show-links"> 
+            Show Links
+          </label>
+          <small style="color: var(--text-muted); margin-left: 10px;">Hide all link groups to show only the background</small>
+        </div>
+        <div class="setting-item">
+          <label>
+            <input type="checkbox" id="show-clock"> 
+            Show Clock
+          </label>
+          <small style="color: var(--text-muted); margin-left: 10px;">Display the time in the bottom right corner</small>
+        </div>
+      </div>
+      
+      <h2 style="color: var(--primary-color); margin: 30px 0 20px 0; font-size: 18px;">Link Groups</h2>
+      
+      <div class="actions">
+        <button class="btn btn-primary" data-action="add-group">Add Group</button>
+        <button class="btn btn-danger" data-action="clear-groups">Clear</button>
+      </div>
+
+      <div id="groups-container"></div>
+
+      <div class="import-export">
+        <h3 style="color: var(--primary-color);">Import/Export Data</h3>
+        <p>You can backup your data or import from a backup:</p>
+        <div style="margin-bottom: 15px;">
+          <button class="btn btn-primary" data-action="export">Export Data</button>
+          <button class="btn btn-primary" data-action="import">Import Data</button>
+        </div>
+        <textarea id="import-export-text" placeholder="Paste your exported data here for import..."></textarea>
+      </div>
+    </div>
+
+    <div id="status" class="status"></div>
+
+    <script src="options.js"></script>
+  </body>
+</html>
