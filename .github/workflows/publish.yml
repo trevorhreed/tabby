@@ -20,7 +20,7 @@ jobs:
             -x "store/*"
 
       - name: Upload and publish
-        run: npx -y chrome-webstore-upload-cli@3.5.0 upload --source extension.zip --auto-publish
+        run: npx -y chrome-webstore-upload-cli@3.5.0 upload --source extension.zip --auto-publish --max-await-in-progress 300
         env:
           EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
           CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
