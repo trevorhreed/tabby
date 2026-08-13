@@ -137,12 +137,71 @@
         opacity: 1;
         transform: rotate(90deg);
       }
+
+      .set-switcher {
+        position: fixed;
+        top: 1rem;
+        right: 4rem;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+      }
+
+      .set-switcher-toggle {
+        color: var(--text);
+        opacity: 0.6;
+        cursor: pointer;
+        padding: 0.5rem;
+        border-radius: 0.5rem;
+        transition: opacity 0.3s;
+        font-size: 1rem;
+        /* matches the height of the 1.5rem gear glyph next to it */
+        line-height: 1.5rem;
+        text-decoration: none;
+      }
+
+      .set-switcher-toggle:hover {
+        opacity: 1;
+      }
+
+      .set-switcher-menu {
+        margin-top: 0.5rem;
+        padding: 0.5rem;
+        display: flex;
+        flex-direction: column;
+        min-width: 8rem;
+      }
+
+      .set-switcher-menu[hidden] {
+        display: none;
+      }
+
+      .set-switcher-item {
+        color: var(--text);
+        cursor: pointer;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        transition: background-color 0.3s;
+      }
+
+      .set-switcher-item:hover {
+        background-color: var(--text-hover);
+      }
+
+      .set-switcher-item.current {
+        opacity: 0.6;
+      }
     </style>
   </head>
   <body>
     <a id="settings-link" class="settings-link" title="Options">&#9881;</a>
+    <div id="set-switcher" class="set-switcher">
+      <a id="set-switcher-toggle" class="set-switcher-toggle" title="Link set"></a>
+      <div id="set-switcher-menu" class="set-switcher-menu panel" hidden></div>
+    </div>
     <section id="link-groups" class="link-groups panel"></section>
     <section id="clock" class="clock panel"><span></span></section>
+    <script src="storage.js"></script>
     <script src="new-tab.js"></script>
   </body>
 </html>

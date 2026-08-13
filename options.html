@@ -346,6 +346,16 @@
         transform: scale(1.2);
       }
 
+      .setting-item select {
+        padding: 8px 12px;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        font-size: 14px;
+        background-color: var(--input-bg);
+        color: var(--text-color);
+        min-width: 150px;
+      }
+
       .import-export h3 {
         margin-top: 0;
       }
@@ -401,6 +411,37 @@
         </div>
       </div>
 
+      <div class="settings-section">
+        <h2>Link Sets</h2>
+        <div class="setting-item">
+          <label for="active-set-select">Active on this device</label>
+          <select id="active-set-select"></select>
+          <small style="color: var(--text-muted); margin-left: 10px"
+            >Which set this device's new tab shows — stored locally, never
+            synced</small
+          >
+        </div>
+        <div class="setting-item">
+          <label for="editing-set-select">Editing</label>
+          <select id="editing-set-select"></select>
+          <button class="btn btn-primary btn-small" data-action="new-set">
+            New
+          </button>
+          <button class="btn btn-primary btn-small" data-action="rename-set">
+            Rename
+          </button>
+          <button
+            class="btn btn-primary btn-small"
+            data-action="duplicate-set"
+          >
+            Duplicate
+          </button>
+          <button class="btn btn-danger btn-small" data-action="delete-set">
+            Delete
+          </button>
+        </div>
+      </div>
+
       <h2
         style="
           color: var(--primary-color);
@@ -440,6 +481,7 @@
 
     <div id="status" class="status"></div>
 
+    <script src="storage.js"></script>
     <script src="options.js"></script>
   </body>
 </html>
