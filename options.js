@@ -128,8 +128,6 @@ function pickJsonFile() {
   });
 }
 
-const toFilename = (name) => name.replace(/[^\w-]+/g, "_");
-
 // allowName lets a rename keep its current name without a duplicate error
 function promptForSetName(message, defaultValue = "", allowName = null) {
   const name = prompt(message, defaultValue);
@@ -434,36 +432,6 @@ function handleButtonClick(e) {
         });
       break;
     }
-
-    case "export-set":
-      // Exports what's on screen, including unsaved edits
-      downloadJson(`tabby-set-${toFilename(editingSetName)}.json`, {
-        groups: editingGroups,
-      });
-      break;
-
-    case "import-set":
-      pickJsonFile()
-        .then((data) => {
-          // Accepts a bare groups array or a { groups } export
-          const groups = Array.isArray(data) ? data : data && data.groups;
-          if (!Array.isArray(groups)) {
-            throw new Error("Expected a groups array or { groups } object");
-          }
-          editingGroups = groups;
-          return syncSet({ [setKey(editingSetName)]: { groups } });
-        })
-        .then(() => {
-          markGroupsSaved();
-          renderGroups();
-          updateSaveButton();
-          showStatus(`Imported into "${editingSetName}"`, "success");
-        })
-        .catch((err) => {
-          showStatus("Error importing set: " + err.message, "error");
-          console.error(err);
-        });
-      break;
 
     case "import":
       pickJsonFile()
