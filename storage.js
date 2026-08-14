@@ -15,8 +15,11 @@ const DEFAULT_SET_NAME = "Default";
 const defaultSettings = {
   showLinks: true,
   showClock: true,
-  twelveHourClock: false,
+  twelveHourClock: true,
   showSeconds: true,
+  // Multiplier on the new tab page's root font-size; everything is sized
+  // in rem, so this scales the whole page
+  scale: 1,
 };
 
 // Default data structure

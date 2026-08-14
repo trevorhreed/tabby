@@ -59,6 +59,13 @@ function renderSettings() {
   Object.entries(SETTING_CHECKBOXES).forEach(([id, key]) => {
     document.getElementById(id).checked = meta.settings[key];
   });
+  document.getElementById("page-scale").value = meta.settings.scale;
+  renderScaleValue();
+}
+
+function renderScaleValue() {
+  document.getElementById("page-scale-value").textContent =
+    Math.round(meta.settings.scale * 100) + "%";
 }
 
 function renderSetTabs() {
@@ -554,6 +561,13 @@ async function init() {
       document
         .getElementById(id)
         .addEventListener("change", handleSettingChange);
+    });
+
+    // Debounced while dragging, so the slider doesn't burn write quota
+    document.getElementById("page-scale").addEventListener("input", (e) => {
+      meta.settings.scale = parseFloat(e.target.value);
+      renderScaleValue();
+      scheduleSave();
     });
 
     document.addEventListener("input", (e) => {
