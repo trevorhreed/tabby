@@ -62,8 +62,13 @@
       .link-groups {
         display: inline-block;
         overflow: auto;
+        /* never extend past the viewport; scroll instead */
         max-height: 100%;
+        max-width: 100%;
         box-sizing: border-box;
+        /* stack above the fixed clock when they overlap */
+        position: relative;
+        z-index: 2;
         border-top-left-radius: 0;
         border-top-right-radius: 0;
         border-bottom-left-radius: 0;
@@ -109,6 +114,7 @@
         position: fixed;
         bottom: 0rem;
         right: 0rem;
+        z-index: 1;
         border-top-right-radius: 0;
         border-bottom-left-radius: 0;
         border-bottom-right-radius: 0;
