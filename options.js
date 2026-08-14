@@ -428,6 +428,43 @@ function handleButtonClick(e) {
       break;
     }
 
+    case "export-set":
+      // Exports what's on screen, including unsaved edits (matches duplicate)
+      document.getElementById("import-export-text").value = JSON.stringify(
+        { groups: editingGroups },
+        null,
+        2,
+      );
+      showStatus(`Set "${editingSetName}" exported to text area`, "success");
+      break;
+
+    case "import-set":
+      try {
+        const text = document.getElementById("import-export-text").value;
+        const data = JSON.parse(text);
+        // Accepts a bare groups array or a { groups } export
+        const groups = Array.isArray(data) ? data : data && data.groups;
+        if (!Array.isArray(groups)) {
+          throw new Error("Expected a groups array or { groups } object");
+        }
+        editingGroups = groups;
+        syncSet({ [setKey(editingSetName)]: { groups } })
+          .then(() => {
+            markGroupsSaved();
+            renderGroups();
+            updateSaveButton();
+            showStatus(`Imported into "${editingSetName}"`, "success");
+          })
+          .catch((err) => {
+            showStatus("Error importing set", "error");
+            console.error(err);
+          });
+      } catch (err) {
+        showStatus("Error importing set: " + err.message, "error");
+        console.error(err);
+      }
+      break;
+
     case "import":
       try {
         const text = document.getElementById("import-export-text").value;

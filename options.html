@@ -346,6 +346,12 @@
         transform: scale(1.2);
       }
 
+      .setting-item.stacked {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+      }
+
       .setting-item select {
         padding: 8px 12px;
         border: 1px solid var(--border-color);
@@ -449,10 +455,10 @@
             >Display the time in the bottom right corner</small
           >
         </div>
-        <div class="setting-item">
+        <div class="setting-item stacked">
           <label for="active-set-select">Active Link Set</label>
           <select id="active-set-select"></select>
-          <small style="color: var(--text-muted); margin-left: 10px"
+          <small style="color: var(--text-muted)"
             >Which set this device's new tab shows — stored locally, never
             synced</small
           >
@@ -495,13 +501,22 @@
 
       <div class="import-export">
         <h3 style="color: var(--primary-color)">Import/Export Data</h3>
-        <p>You can backup your data or import from a backup:</p>
+        <p>
+          You can backup your data or import from a backup — everything at
+          once, or just the link set on the current tab:
+        </p>
         <div style="margin-bottom: 15px">
           <button class="btn btn-primary" data-action="export">
-            Export Data
+            Export All
           </button>
           <button class="btn btn-primary" data-action="import">
-            Import Data
+            Import All
+          </button>
+          <button class="btn btn-primary" data-action="export-set">
+            Export Current Set
+          </button>
+          <button class="btn btn-primary" data-action="import-set">
+            Import Into Current Set
           </button>
         </div>
         <textarea
