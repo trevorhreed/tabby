@@ -244,12 +244,9 @@ async function init() {
     initSetSwitcher(meta.setNames, activeSetName);
   }
 
-  // Handle showClock setting (with both segments off there's nothing to show)
+  // The clock panel only shows when at least one of its segments does
   const clockSection = document.getElementById("clock");
-  if (
-    !meta.settings.showClock ||
-    (!meta.settings.showDate && !meta.settings.showTime)
-  ) {
+  if (!meta.settings.showDate && !meta.settings.showTime) {
     clockSection.style.display = "none";
   } else {
     updateClock(meta.settings);

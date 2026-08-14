@@ -14,7 +14,6 @@ const DEFAULT_SET_NAME = "Default";
 
 const defaultSettings = {
   showLinks: true,
-  showClock: true,
   showDate: true,
   showTime: true,
   twelveHourClock: true,
