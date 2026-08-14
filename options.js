@@ -52,19 +52,6 @@ function renderSettings() {
   document.getElementById("show-clock").checked = meta.settings.showClock;
 }
 
-function renderSetControls() {
-  const activeSelect = document.getElementById("active-set-select");
-  activeSelect.innerHTML = "";
-  meta.setNames.forEach((name) => {
-    const option = document.createElement("option");
-    option.value = name;
-    option.textContent = name;
-    activeSelect.appendChild(option);
-  });
-  activeSelect.value = activeSetName;
-  renderSetTabs();
-}
-
 function renderSetTabs() {
   const tabs = document.getElementById("set-tabs");
   tabs.innerHTML = "";
@@ -147,7 +134,7 @@ async function switchEditingSet(name) {
   }
   editingSetName = name;
   editingGroups = await loadSetGroups(name);
-  renderSetControls();
+  renderSetTabs();
   renderGroups();
 }
 
@@ -336,7 +323,7 @@ function handleButtonClick(e) {
           }
         })
         .then(() => {
-          renderSetControls();
+          renderSetTabs();
           showStatus(`Renamed to "${newName}"`, "success");
         })
         .catch((err) => {
@@ -394,7 +381,7 @@ function handleButtonClick(e) {
           }
           editingSetName = fallback;
           editingGroups = await loadSetGroups(fallback);
-          renderSetControls();
+          renderSetTabs();
           renderGroups();
           showStatus(`Set "${name}" deleted`, "success");
         })
@@ -482,7 +469,7 @@ async function importAllData(data) {
     await setActiveSetName(activeSetName);
   }
   renderSettings();
-  renderSetControls();
+  renderSetTabs();
   renderGroups();
   showStatus("Data imported successfully!", "success");
 }
@@ -503,7 +490,7 @@ async function init() {
     editingGroups = await loadSetGroups(editingSetName);
 
     renderSettings();
-    renderSetControls();
+    renderSetTabs();
     renderGroups();
 
     // Best-effort flush of a debounced save if the page closes mid-typing
@@ -520,16 +507,6 @@ async function init() {
     document
       .getElementById("show-clock")
       .addEventListener("change", handleSettingChange);
-
-    // Active set is a per-device choice, so it writes straight to
-    // chrome.storage.local instead of going through the save flow
-    document
-      .getElementById("active-set-select")
-      .addEventListener("change", async (e) => {
-        activeSetName = e.target.value;
-        await setActiveSetName(activeSetName);
-        showStatus(`This device now shows "${activeSetName}"`, "success");
-      });
 
     document.addEventListener("input", (e) => {
       if (
