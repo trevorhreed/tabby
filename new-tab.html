@@ -118,14 +118,23 @@
         }
       }
 
-      .settings-link {
+      /* Shared panel strip keeps the controls legible over busy photos */
+      .top-controls {
         position: fixed;
         top: 1rem;
         right: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.25rem;
+        border-radius: 0.75rem;
+        /* the panel class's overflow: auto would clip the dropdown menu */
+        overflow: visible;
+      }
+
+      .settings-link {
         color: var(--text);
-        /* Panel background keeps the control legible over busy photos */
-        background: var(--panel-background);
-        opacity: 0.9;
+        opacity: 0.8;
         cursor: pointer;
         box-sizing: border-box;
         display: flex;
@@ -147,19 +156,13 @@
       }
 
       .set-switcher {
-        position: fixed;
-        top: 1rem;
-        right: 4rem;
+        position: relative;
         display: flex;
-        flex-direction: column;
-        align-items: flex-end;
       }
 
       .set-switcher-toggle {
         color: var(--text);
-        /* Panel background keeps the control legible over busy photos */
-        background: var(--panel-background);
-        opacity: 0.9;
+        opacity: 0.8;
         cursor: pointer;
         box-sizing: border-box;
         display: flex;
@@ -178,7 +181,9 @@
       }
 
       .set-switcher-menu {
-        margin-top: 0.5rem;
+        position: absolute;
+        top: calc(100% + 0.75rem);
+        right: 0;
         padding: 0.5rem;
         display: flex;
         flex-direction: column;
@@ -207,10 +212,12 @@
     </style>
   </head>
   <body>
-    <a id="settings-link" class="settings-link" title="Options">&#9881;</a>
-    <div id="set-switcher" class="set-switcher">
-      <a id="set-switcher-toggle" class="set-switcher-toggle" title="Link set"></a>
-      <div id="set-switcher-menu" class="set-switcher-menu panel" hidden></div>
+    <div class="top-controls panel">
+      <div id="set-switcher" class="set-switcher">
+        <a id="set-switcher-toggle" class="set-switcher-toggle" title="Link set"></a>
+        <div id="set-switcher-menu" class="set-switcher-menu panel" hidden></div>
+      </div>
+      <a id="settings-link" class="settings-link" title="Options">&#9881;</a>
     </div>
     <section id="link-groups" class="link-groups panel"></section>
     <section id="clock" class="clock panel"><span></span></section>
