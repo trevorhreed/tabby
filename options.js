@@ -51,6 +51,8 @@ function showStatus(message, type) {
 const SETTING_CHECKBOXES = {
   "show-links": "showLinks",
   "show-clock": "showClock",
+  "show-date": "showDate",
+  "show-time": "showTime",
   "twelve-hour-clock": "twelveHourClock",
   "show-seconds": "showSeconds",
 };

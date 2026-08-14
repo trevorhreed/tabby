@@ -125,7 +125,12 @@ const getFormattedTime = (settings) => {
   const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
   const formattedSeconds = seconds < 10 ? `0${seconds}` : seconds;
   const secondsPart = settings.showSeconds ? `:${formattedSeconds}` : "";
-  return `${dayOfTheWeek} ${month} ${dayOfTheMonth} \u2022 ${formattedHours}:${formattedMinutes}${secondsPart}${suffix}`;
+  const datePart = `${dayOfTheWeek} ${month} ${dayOfTheMonth}`;
+  const timePart = `${formattedHours}:${formattedMinutes}${secondsPart}${suffix}`;
+  if (settings.showDate && settings.showTime) {
+    return `${datePart} \u2022 ${timePart}`;
+  }
+  return settings.showDate ? datePart : timePart;
 };
 
 function renderGroups(groups) {
@@ -239,9 +244,12 @@ async function init() {
     initSetSwitcher(meta.setNames, activeSetName);
   }
 
-  // Handle showClock setting
+  // Handle showClock setting (with both segments off there's nothing to show)
   const clockSection = document.getElementById("clock");
-  if (!meta.settings.showClock) {
+  if (
+    !meta.settings.showClock ||
+    (!meta.settings.showDate && !meta.settings.showTime)
+  ) {
     clockSection.style.display = "none";
   } else {
     updateClock(meta.settings);

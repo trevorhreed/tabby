@@ -15,6 +15,8 @@ const DEFAULT_SET_NAME = "Default";
 const defaultSettings = {
   showLinks: true,
   showClock: true,
+  showDate: true,
+  showTime: true,
   twelveHourClock: true,
   showSeconds: true,
   // Independent size multipliers for the two new-tab panels
