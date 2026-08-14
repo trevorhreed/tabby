@@ -1,7 +1,5 @@
 const MAX_IMAGE_INDEX = 64;
 const MAX_CHRISTMAS_INDEX = 50;
-// Matches the --font-size default in new-tab.html
-const BASE_FONT_SIZE_PX = 20;
 
 const getSeason = () => {
   const now = new Date();
@@ -212,10 +210,14 @@ function updateClock(settings) {
 async function init() {
   const meta = await loadMeta();
 
-  // Everything is sized in rem, so scaling the root font-size scales the page
+  // Each panel zooms independently off its own multiplier
   document.documentElement.style.setProperty(
-    "--font-size",
-    `${BASE_FONT_SIZE_PX * meta.settings.scale}px`,
+    "--links-scale",
+    meta.settings.linksScale,
+  );
+  document.documentElement.style.setProperty(
+    "--clock-scale",
+    meta.settings.clockScale,
   );
 
   // Settings link

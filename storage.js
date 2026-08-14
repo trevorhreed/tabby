@@ -17,9 +17,9 @@ const defaultSettings = {
   showClock: true,
   twelveHourClock: true,
   showSeconds: true,
-  // Multiplier on the new tab page's root font-size; everything is sized
-  // in rem, so this scales the whole page
-  scale: 1,
+  // Independent size multipliers for the two new-tab panels
+  linksScale: 1,
+  clockScale: 1,
 };
 
 // Default data structure

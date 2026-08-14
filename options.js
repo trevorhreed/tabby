@@ -55,17 +55,26 @@ const SETTING_CHECKBOXES = {
   "show-seconds": "showSeconds",
 };
 
+// Maps settings-slider element ids to their settings keys; each slider has
+// a matching "<id>-value" percentage readout
+const SETTING_SLIDERS = {
+  "links-scale": "linksScale",
+  "clock-scale": "clockScale",
+};
+
 function renderSettings() {
   Object.entries(SETTING_CHECKBOXES).forEach(([id, key]) => {
     document.getElementById(id).checked = meta.settings[key];
   });
-  document.getElementById("page-scale").value = meta.settings.scale;
-  renderScaleValue();
+  Object.entries(SETTING_SLIDERS).forEach(([id, key]) => {
+    document.getElementById(id).value = meta.settings[key];
+    renderScaleValue(id, key);
+  });
 }
 
-function renderScaleValue() {
-  document.getElementById("page-scale-value").textContent =
-    Math.round(meta.settings.scale * 100) + "%";
+function renderScaleValue(id, key) {
+  document.getElementById(`${id}-value`).textContent =
+    Math.round(meta.settings[key] * 100) + "%";
 }
 
 function renderSetTabs() {
@@ -563,11 +572,13 @@ async function init() {
         .addEventListener("change", handleSettingChange);
     });
 
-    // Debounced while dragging, so the slider doesn't burn write quota
-    document.getElementById("page-scale").addEventListener("input", (e) => {
-      meta.settings.scale = parseFloat(e.target.value);
-      renderScaleValue();
-      scheduleSave();
+    // Debounced while dragging, so the sliders don't burn write quota
+    Object.entries(SETTING_SLIDERS).forEach(([id, key]) => {
+      document.getElementById(id).addEventListener("input", (e) => {
+        meta.settings[key] = parseFloat(e.target.value);
+        renderScaleValue(id, key);
+        scheduleSave();
+      });
     });
 
     document.addEventListener("input", (e) => {

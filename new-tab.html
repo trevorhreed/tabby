@@ -13,6 +13,8 @@
         --text-hover: #ccc3;
         --panel-background: #000c;
         --font-size: 20px;
+        --links-scale: 1;
+        --clock-scale: 1;
       }
       html,
       body {
@@ -61,6 +63,8 @@
 
       .link-groups {
         display: inline-block;
+        /* zoom (not transform) so layout and scrolling scale with it */
+        zoom: var(--links-scale);
         overflow: auto;
         /* never extend past the viewport; scroll instead */
         max-height: 100%;
@@ -114,13 +118,15 @@
         position: fixed;
         bottom: 0rem;
         right: 0rem;
+        zoom: var(--clock-scale);
         z-index: 1;
         border-top-right-radius: 0;
         border-bottom-left-radius: 0;
         border-bottom-right-radius: 0;
 
         & span {
-          font-size: 3rem;
+          /* same base size as the links; the clock-scale setting adjusts it */
+          font-size: 1rem;
         }
       }
 
