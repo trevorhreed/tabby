@@ -137,6 +137,41 @@ function pickJsonFile() {
 
 const toFilename = (name) => name.replace(/[^\w-]+/g, "_");
 
+// Modal offering both export paths: copy to clipboard or download a file.
+// Resolves with "clipboard", "download", or null if cancelled. Handlers are
+// assigned via onclick so reopening replaces them instead of stacking.
+function pickExportTarget(title) {
+  return new Promise((resolve) => {
+    const overlay = document.getElementById("export-dialog");
+    document.getElementById("export-dialog-title").textContent = title;
+    overlay.hidden = false;
+
+    const close = (choice) => {
+      overlay.hidden = true;
+      resolve(choice);
+    };
+
+    document.getElementById("export-dialog-copy").onclick = () =>
+      close("clipboard");
+    document.getElementById("export-dialog-download").onclick = () =>
+      close("download");
+    document.getElementById("export-dialog-cancel").onclick = () =>
+      close(null);
+    overlay.onclick = (e) => {
+      if (e.target === overlay) close(null);
+    };
+  });
+}
+
+function exportJson(choice, filename, value) {
+  if (choice === "clipboard") {
+    return navigator.clipboard
+      .writeText(JSON.stringify(value, null, 2))
+      .then(() => showStatus("Copied to clipboard", "success"));
+  }
+  downloadJson(filename, value);
+}
+
 // Modal offering both import paths: upload a JSON file or paste JSON text.
 // Resolves with the parsed value, or null if cancelled. A paste that fails
 // to parse keeps the dialog open for correction. Handlers are assigned via
@@ -397,9 +432,19 @@ function handleButtonClick(e) {
     }
 
     case "export-set":
-      downloadJson(`tabby-set-${toFilename(editingSetName)}.json`, {
-        groups: editingGroups,
-      });
+      pickExportTarget(`Export "${editingSetName}"`)
+        .then((choice) => {
+          if (!choice) return;
+          return exportJson(
+            choice,
+            `tabby-set-${toFilename(editingSetName)}.json`,
+            { groups: editingGroups },
+          );
+        })
+        .catch((err) => {
+          showStatus("Error exporting set", "error");
+          console.error(err);
+        });
       break;
 
     case "import-set":
@@ -455,22 +500,27 @@ function handleButtonClick(e) {
       break;
     }
 
-    case "export": {
-      const keys = meta.setNames.map(setKey);
-      syncGet(keys)
-        .then((result) => {
-          const sets = {};
-          meta.setNames.forEach((name) => {
-            sets[name] = (result[setKey(name)] || { groups: [] }).groups;
+    case "export":
+      pickExportTarget("Export All Data")
+        .then((choice) => {
+          if (!choice) return;
+          const keys = meta.setNames.map(setKey);
+          return syncGet(keys).then((result) => {
+            const sets = {};
+            meta.setNames.forEach((name) => {
+              sets[name] = (result[setKey(name)] || { groups: [] }).groups;
+            });
+            return exportJson(choice, "tabby-backup.json", {
+              settings: meta.settings,
+              sets,
+            });
           });
-          downloadJson("tabby-backup.json", { settings: meta.settings, sets });
         })
         .catch((err) => {
           showStatus("Error exporting data", "error");
           console.error(err);
         });
       break;
-    }
 
     case "import":
       pickJsonInput("Import All Data")
