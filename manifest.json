@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Tabby",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A beautiful new tab page and link manager with seasonal backgrounds and synchronized data",
   "permissions": ["storage"],
   "chrome_url_overrides": {
