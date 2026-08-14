@@ -290,6 +290,54 @@
         border-radius: 5px;
       }
 
+      .btn-secondary {
+        background-color: var(--secondary-color);
+        color: var(--text-color);
+      }
+
+      .btn-secondary:hover {
+        background-color: var(--border-color);
+      }
+
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+      }
+
+      .modal-overlay[hidden] {
+        display: none;
+      }
+
+      .modal {
+        background: var(--container-bg);
+        border-radius: 8px;
+        box-shadow: var(--shadow);
+        padding: 20px;
+        width: 500px;
+        max-width: 90%;
+      }
+
+      .modal h3 {
+        margin-top: 0;
+        color: var(--primary-color);
+      }
+
+      .modal textarea {
+        height: 150px;
+      }
+
+      .modal-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        margin-top: 15px;
+      }
+
       .status {
         position: fixed;
         top: 20px;
@@ -469,6 +517,32 @@
           </button>
           <button class="btn btn-primary" data-action="import">
             Import All
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="import-dialog" class="modal-overlay" hidden>
+      <div class="modal">
+        <h3 id="import-dialog-title">Import</h3>
+        <div style="margin-bottom: 15px">
+          <button id="import-dialog-upload" class="btn btn-primary">
+            Upload JSON File
+          </button>
+          <span style="color: var(--text-muted); margin-left: 10px"
+            >or paste JSON below</span
+          >
+        </div>
+        <textarea
+          id="import-dialog-text"
+          placeholder="Paste JSON here..."
+        ></textarea>
+        <div class="modal-actions">
+          <button id="import-dialog-cancel" class="btn btn-secondary">
+            Cancel
+          </button>
+          <button id="import-dialog-confirm" class="btn btn-success">
+            Import
           </button>
         </div>
       </div>

@@ -111,6 +111,42 @@ function pickJsonFile() {
 
 const toFilename = (name) => name.replace(/[^\w-]+/g, "_");
 
+// Modal offering both import paths: upload a JSON file or paste JSON text.
+// Resolves with the parsed value, or null if cancelled. A paste that fails
+// to parse keeps the dialog open for correction. Handlers are assigned via
+// onclick so reopening the dialog replaces them instead of stacking.
+function pickJsonInput(title) {
+  return new Promise((resolve) => {
+    const overlay = document.getElementById("import-dialog");
+    const textarea = document.getElementById("import-dialog-text");
+    document.getElementById("import-dialog-title").textContent = title;
+    textarea.value = "";
+    overlay.hidden = false;
+
+    const close = (value) => {
+      overlay.hidden = true;
+      resolve(value);
+    };
+
+    document.getElementById("import-dialog-upload").onclick = () => {
+      pickJsonFile().then(close, (err) => {
+        showStatus("Error reading file: " + err.message, "error");
+      });
+    };
+    document.getElementById("import-dialog-confirm").onclick = () => {
+      try {
+        close(JSON.parse(textarea.value));
+      } catch (err) {
+        showStatus("Invalid JSON: " + err.message, "error");
+      }
+    };
+    document.getElementById("import-dialog-cancel").onclick = () => close(null);
+    overlay.onclick = (e) => {
+      if (e.target === overlay) close(null);
+    };
+  });
+}
+
 // allowName lets a rename keep its current name without a duplicate error
 function promptForSetName(message, defaultValue = "", allowName = null) {
   const name = prompt(message, defaultValue);
@@ -343,8 +379,9 @@ function handleButtonClick(e) {
       break;
 
     case "import-set":
-      pickJsonFile()
+      pickJsonInput(`Import Into "${editingSetName}"`)
         .then((data) => {
+          if (data === null) return;
           // Accepts a bare groups array or a { groups } export
           const groups = Array.isArray(data) ? data : data && data.groups;
           if (!Array.isArray(groups)) {
@@ -352,10 +389,9 @@ function handleButtonClick(e) {
           }
           editingGroups = groups;
           renderGroups();
-          return flushSave();
-        })
-        .then(() => {
-          showStatus(`Imported into "${editingSetName}"`, "success");
+          return flushSave().then(() => {
+            showStatus(`Imported into "${editingSetName}"`, "success");
+          });
         })
         .catch((err) => {
           showStatus("Error importing set: " + err.message, "error");
@@ -413,8 +449,11 @@ function handleButtonClick(e) {
     }
 
     case "import":
-      pickJsonFile()
-        .then(importAllData)
+      pickJsonInput("Import All Data")
+        .then((data) => {
+          if (data === null) return;
+          return importAllData(data);
+        })
         .catch((err) => {
           showStatus("Error importing data: " + err.message, "error");
           console.error(err);
