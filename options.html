@@ -1,6 +1,7 @@
 <!doctype html>
 <html>
   <head>
+    <meta charset="utf-8" />
     <title>Tabby Options</title>
     <link rel="icon" type="image/png" sizes="32x32" href="icons/icon48.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="icons/icon16.png" />
@@ -457,11 +458,13 @@
         </div>
         <div class="setting-item stacked">
           <label for="active-set-select">Active Link Set</label>
-          <select id="active-set-select"></select>
-          <small style="color: var(--text-muted)"
-            >Which set this device's new tab shows — stored locally, never
-            synced</small
-          >
+          <div style="display: flex; align-items: center; gap: 10px">
+            <select id="active-set-select"></select>
+            <small style="color: var(--text-muted)"
+              >Which set this device's new tab shows — stored locally, never
+              synced</small
+            >
+          </div>
         </div>
       </div>
 
@@ -478,22 +481,16 @@
       <div id="set-tabs" class="set-tabs"></div>
 
       <div class="actions">
+        <button class="btn btn-primary" data-action="rename-set">Rename</button>
+        <button class="btn btn-primary" data-action="export-set">Export</button>
+        <button class="btn btn-primary" data-action="import-set">Import</button>
+        <button class="btn btn-danger" data-action="clear-groups">Clear</button>
+        <button class="btn btn-danger" data-action="delete-set">Delete</button>
+      </div>
+
+      <div class="actions">
         <button class="btn btn-primary" data-action="add-group">
           Add Group
-        </button>
-        <button class="btn btn-danger" data-action="clear-groups">Clear</button>
-        <button
-          class="btn btn-primary btn-small"
-          data-action="rename-set"
-          style="margin-left: auto"
-        >
-          Rename Set
-        </button>
-        <button class="btn btn-primary btn-small" data-action="duplicate-set">
-          Duplicate Set
-        </button>
-        <button class="btn btn-danger btn-small" data-action="delete-set">
-          Delete Set
         </button>
       </div>
 
@@ -502,8 +499,8 @@
       <div class="import-export">
         <h3 style="color: var(--primary-color)">Import/Export Data</h3>
         <p>
-          You can backup your data or import from a backup — everything at
-          once, or just the link set on the current tab:
+          Download a backup of all settings and link sets, or restore from
+          one. A single set can be exported/imported from its tab above.
         </p>
         <div style="margin-bottom: 15px">
           <button class="btn btn-primary" data-action="export">
@@ -512,17 +509,7 @@
           <button class="btn btn-primary" data-action="import">
             Import All
           </button>
-          <button class="btn btn-primary" data-action="export-set">
-            Export Current Set
-          </button>
-          <button class="btn btn-primary" data-action="import-set">
-            Import Into Current Set
-          </button>
         </div>
-        <textarea
-          id="import-export-text"
-          placeholder="Paste your exported data here for import..."
-        ></textarea>
       </div>
     </div>
 

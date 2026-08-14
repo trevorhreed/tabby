@@ -94,6 +94,42 @@ function renderSetTabs() {
   tabs.appendChild(newTab);
 }
 
+function downloadJson(filename, value) {
+  const blob = new Blob([JSON.stringify(value, null, 2)], {
+    type: "application/json",
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// Resolves with the parsed JSON; never settles if the dialog is cancelled
+// (no change event fires), which safely abandons the import
+function pickJsonFile() {
+  return new Promise((resolve, reject) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json,application/json";
+    input.addEventListener("change", () => {
+      const file = input.files[0];
+      if (!file) return;
+      file.text().then((text) => {
+        try {
+          resolve(JSON.parse(text));
+        } catch (err) {
+          reject(err);
+        }
+      }, reject);
+    });
+    input.click();
+  });
+}
+
+const toFilename = (name) => name.replace(/[^\w-]+/g, "_");
+
 // allowName lets a rename keep its current name without a duplicate error
 function promptForSetName(message, defaultValue = "", allowName = null) {
   const name = prompt(message, defaultValue);
@@ -349,30 +385,6 @@ function handleButtonClick(e) {
       break;
     }
 
-    case "duplicate-set": {
-      const name = promptForSetName(
-        `Name for the copy of "${editingSetName}":`,
-        `${editingSetName} copy`,
-      );
-      if (!name) break;
-      meta.setNames.push(name);
-      // Duplicates what's on screen, including unsaved edits
-      syncSet({
-        [SYNC_META_KEY]: meta,
-        [setKey(name)]: { groups: editingGroups },
-      })
-        .then(() => {
-          markMetaSaved();
-          renderSetControls();
-          showStatus(`Set "${name}" created`, "success");
-        })
-        .catch((err) => {
-          showStatus("Error duplicating set", "error");
-          console.error(err);
-        });
-      break;
-    }
-
     case "delete-set": {
       if (meta.setNames.length === 1) {
         showStatus("Cannot delete the only set", "error");
@@ -414,12 +426,7 @@ function handleButtonClick(e) {
           meta.setNames.forEach((name) => {
             sets[name] = (result[setKey(name)] || { groups: [] }).groups;
           });
-          document.getElementById("import-export-text").value = JSON.stringify(
-            { settings: meta.settings, sets },
-            null,
-            2,
-          );
-          showStatus("Data exported to text area", "success");
+          downloadJson("tabby-backup.json", { settings: meta.settings, sets });
         })
         .catch((err) => {
           showStatus("Error exporting data", "error");
@@ -429,111 +436,99 @@ function handleButtonClick(e) {
     }
 
     case "export-set":
-      // Exports what's on screen, including unsaved edits (matches duplicate)
-      document.getElementById("import-export-text").value = JSON.stringify(
-        { groups: editingGroups },
-        null,
-        2,
-      );
-      showStatus(`Set "${editingSetName}" exported to text area`, "success");
+      // Exports what's on screen, including unsaved edits
+      downloadJson(`tabby-set-${toFilename(editingSetName)}.json`, {
+        groups: editingGroups,
+      });
       break;
 
     case "import-set":
-      try {
-        const text = document.getElementById("import-export-text").value;
-        const data = JSON.parse(text);
-        // Accepts a bare groups array or a { groups } export
-        const groups = Array.isArray(data) ? data : data && data.groups;
-        if (!Array.isArray(groups)) {
-          throw new Error("Expected a groups array or { groups } object");
-        }
-        editingGroups = groups;
-        syncSet({ [setKey(editingSetName)]: { groups } })
-          .then(() => {
-            markGroupsSaved();
-            renderGroups();
-            updateSaveButton();
-            showStatus(`Imported into "${editingSetName}"`, "success");
-          })
-          .catch((err) => {
-            showStatus("Error importing set", "error");
-            console.error(err);
-          });
-      } catch (err) {
-        showStatus("Error importing set: " + err.message, "error");
-        console.error(err);
-      }
+      pickJsonFile()
+        .then((data) => {
+          // Accepts a bare groups array or a { groups } export
+          const groups = Array.isArray(data) ? data : data && data.groups;
+          if (!Array.isArray(groups)) {
+            throw new Error("Expected a groups array or { groups } object");
+          }
+          editingGroups = groups;
+          return syncSet({ [setKey(editingSetName)]: { groups } });
+        })
+        .then(() => {
+          markGroupsSaved();
+          renderGroups();
+          updateSaveButton();
+          showStatus(`Imported into "${editingSetName}"`, "success");
+        })
+        .catch((err) => {
+          showStatus("Error importing set: " + err.message, "error");
+          console.error(err);
+        });
       break;
 
     case "import":
-      try {
-        const text = document.getElementById("import-export-text").value;
-        const data = JSON.parse(text);
-
-        let importedSettings = { ...defaultSettings };
-        let importedSets;
-        // Handle old array format
-        if (Array.isArray(data)) {
-          importedSets = { [DEFAULT_SET_NAME]: data };
-        } else if (data && data.sets) {
-          importedSettings = { ...defaultSettings, ...data.settings };
-          importedSets = data.sets;
-        } else if (data && data.groups) {
-          // Single-set format from before link sets existed
-          importedSettings = { ...defaultSettings, ...data.settings };
-          importedSets = { [DEFAULT_SET_NAME]: data.groups };
-        } else {
-          throw new Error("Unrecognized data format");
-        }
-
-        // Validate
-        const names = Object.keys(importedSets);
-        if (names.length === 0) {
-          throw new Error("At least one link set is required");
-        }
-        names.forEach((name) => {
-          if (!Array.isArray(importedSets[name])) {
-            throw new Error(`Groups for set "${name}" must be an array`);
-          }
+      pickJsonFile()
+        .then(importAllData)
+        .catch((err) => {
+          showStatus("Error importing data: " + err.message, "error");
+          console.error(err);
         });
-
-        const staleKeys = meta.setNames
-          .filter((name) => !names.includes(name))
-          .map(setKey);
-        meta = { settings: importedSettings, setNames: names };
-        const items = { [SYNC_META_KEY]: meta };
-        names.forEach((name) => {
-          items[setKey(name)] = { groups: importedSets[name] };
-        });
-        syncSet(items)
-          .then(() => (staleKeys.length ? syncRemove(staleKeys) : undefined))
-          .then(async () => {
-            markMetaSaved();
-            editingSetName = names.includes(editingSetName)
-              ? editingSetName
-              : names[0];
-            editingGroups = importedSets[editingSetName];
-            markGroupsSaved();
-            if (!names.includes(activeSetName)) {
-              activeSetName = names[0];
-              await setActiveSetName(activeSetName);
-            }
-            renderSettings();
-            renderSetControls();
-            renderGroups();
-            updateSaveButton();
-            showStatus("Data imported successfully!", "success");
-          })
-          .catch((err) => {
-            showStatus("Error importing data", "error");
-            console.error(err);
-          });
-      } catch (err) {
-        showStatus("Error importing data: " + err.message, "error");
-        console.error(err);
-      }
       break;
   }
+}
+
+async function importAllData(data) {
+  let importedSettings = { ...defaultSettings };
+  let importedSets;
+  // Handle old array format
+  if (Array.isArray(data)) {
+    importedSets = { [DEFAULT_SET_NAME]: data };
+  } else if (data && data.sets) {
+    importedSettings = { ...defaultSettings, ...data.settings };
+    importedSets = data.sets;
+  } else if (data && data.groups) {
+    // Single-set format from before link sets existed
+    importedSettings = { ...defaultSettings, ...data.settings };
+    importedSets = { [DEFAULT_SET_NAME]: data.groups };
+  } else {
+    throw new Error("Unrecognized data format");
+  }
+
+  // Validate
+  const names = Object.keys(importedSets);
+  if (names.length === 0) {
+    throw new Error("At least one link set is required");
+  }
+  names.forEach((name) => {
+    if (!Array.isArray(importedSets[name])) {
+      throw new Error(`Groups for set "${name}" must be an array`);
+    }
+  });
+
+  const staleKeys = meta.setNames
+    .filter((name) => !names.includes(name))
+    .map(setKey);
+  meta = { settings: importedSettings, setNames: names };
+  const items = { [SYNC_META_KEY]: meta };
+  names.forEach((name) => {
+    items[setKey(name)] = { groups: importedSets[name] };
+  });
+  await syncSet(items);
+  if (staleKeys.length) {
+    await syncRemove(staleKeys);
+  }
+  markMetaSaved();
+  editingSetName = names.includes(editingSetName) ? editingSetName : names[0];
+  editingGroups = importedSets[editingSetName];
+  markGroupsSaved();
+  if (!names.includes(activeSetName)) {
+    activeSetName = names[0];
+    await setActiveSetName(activeSetName);
+  }
+  renderSettings();
+  renderSetControls();
+  renderGroups();
+  updateSaveButton();
+  showStatus("Data imported successfully!", "success");
 }
 
 async function init() {
