@@ -4,34 +4,23 @@ on:
   push:
     branches: [release]
 
-permissions:
-  contents: write
-
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Bump patch version
+      # The patch version is the workflow run number: always increasing, so
+      # every publish gets a fresh version without pushing a bump commit back
+      # to release (the branch ruleset only allows changes via pull request).
+      # The manifest's major.minor is kept; bump those in the repo as needed.
+      - name: Set version from run number
         run: |
           VERSION=$(jq -r .version manifest.json)
           MAJOR_MINOR=$(echo "$VERSION" | cut -d. -f1,2)
-          PATCH=$(echo "$VERSION" | cut -d. -f3)
-          NEW_VERSION="${MAJOR_MINOR}.$((PATCH + 1))"
+          NEW_VERSION="${MAJOR_MINOR}.${{ github.run_number }}"
           jq --arg v "$NEW_VERSION" '.version = $v' manifest.json > manifest.tmp && mv manifest.tmp manifest.json
           echo "Version: $VERSION -> $NEW_VERSION"
-
-      # Without this the repo stays on the old version and every later run
-      # recomputes the same number, which the store rejects. Pushes made
-      # with GITHUB_TOKEN don't retrigger workflows, so this can't loop.
-      - name: Commit version bump
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add manifest.json
-          git commit -m "Auto-bump patch version before publishing"
-          git push
 
       - name: Create ZIP package
         run: |
