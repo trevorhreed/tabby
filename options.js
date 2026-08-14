@@ -2,15 +2,15 @@
 const isExtension =
   typeof chrome !== "undefined" && chrome.storage && chrome.storage.sync;
 
+// Debounce keystroke-driven saves; chrome.storage.sync throttles writes
+// (120/minute), so per-keystroke writes could hit the quota
+const SAVE_DEBOUNCE_MS = 500;
+
 let meta = { settings: { ...defaultSettings }, setNames: [] };
 let editingSetName = null;
 let editingGroups = [];
 let activeSetName = null;
-// Settings and groups are tracked separately: set operations (new/rename/
-// duplicate/delete) persist meta immediately, which must not clear or mask
-// pending group edits.
-let savedSettingsJson = JSON.stringify(meta.settings);
-let savedGroupsJson = JSON.stringify(editingGroups);
+let saveTimer = null;
 
 function saveAll() {
   return syncSet({
@@ -19,28 +19,22 @@ function saveAll() {
   });
 }
 
-function markMetaSaved() {
-  savedSettingsJson = JSON.stringify(meta.settings);
+function cancelPendingSave() {
+  clearTimeout(saveTimer);
+  saveTimer = null;
 }
 
-function markGroupsSaved() {
-  savedGroupsJson = JSON.stringify(editingGroups);
+function flushSave() {
+  cancelPendingSave();
+  return saveAll().catch((err) => {
+    showStatus("Error saving changes", "error");
+    console.error(err);
+  });
 }
 
-function hasUnsavedGroupChanges() {
-  return JSON.stringify(editingGroups) !== savedGroupsJson;
-}
-
-function hasUnsavedChanges() {
-  return (
-    JSON.stringify(meta.settings) !== savedSettingsJson ||
-    hasUnsavedGroupChanges()
-  );
-}
-
-function updateSaveButton() {
-  const saveBtn = document.getElementById("save-btn");
-  saveBtn.disabled = !hasUnsavedChanges();
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(flushSave, SAVE_DEBOUNCE_MS);
 }
 
 function showStatus(message, type) {
@@ -128,6 +122,8 @@ function pickJsonFile() {
   });
 }
 
+const toFilename = (name) => name.replace(/[^\w-]+/g, "_");
+
 // allowName lets a rename keep its current name without a duplicate error
 function promptForSetName(message, defaultValue = "", allowName = null) {
   const name = prompt(message, defaultValue);
@@ -145,18 +141,14 @@ function promptForSetName(message, defaultValue = "", allowName = null) {
 }
 
 async function switchEditingSet(name) {
-  if (
-    hasUnsavedGroupChanges() &&
-    !confirm("Discard unsaved changes to the current set?")
-  ) {
-    return;
+  // Flush so a pending debounced save can't land on the wrong set
+  if (saveTimer) {
+    await flushSave();
   }
   editingSetName = name;
   editingGroups = await loadSetGroups(name);
-  markGroupsSaved();
   renderSetControls();
   renderGroups();
-  updateSaveButton();
 }
 
 function renderGroups() {
@@ -223,7 +215,7 @@ function handleSettingChange(e) {
   } else if (field === "show-clock") {
     meta.settings.showClock = e.target.checked;
   }
-  updateSaveButton();
+  flushSave();
 }
 
 function handleGroupChange(e) {
@@ -235,7 +227,7 @@ function handleGroupChange(e) {
   } else if (field === "hide") {
     editingGroups[groupIndex].hide = e.target.checked;
   }
-  updateSaveButton();
+  scheduleSave();
 }
 
 function handleLinkChange(e) {
@@ -250,7 +242,7 @@ function handleLinkChange(e) {
   } else if (field === "hide") {
     editingGroups[groupIndex].links[linkIndex].hide = e.target.checked;
   }
-  updateSaveButton();
+  scheduleSave();
 }
 
 function handleButtonClick(e) {
@@ -268,14 +260,14 @@ function handleButtonClick(e) {
         links: [],
       });
       renderGroups();
-      updateSaveButton();
+      flushSave();
       break;
 
     case "delete-group":
       if (confirm("Are you sure you want to delete this group?")) {
         editingGroups.splice(groupIndex, 1);
         renderGroups();
-        updateSaveButton();
+        flushSave();
       }
       break;
 
@@ -286,46 +278,25 @@ function handleButtonClick(e) {
         hide: false,
       });
       renderGroups();
-      updateSaveButton();
+      flushSave();
       break;
 
     case "delete-link":
       if (confirm("Are you sure you want to delete this link?")) {
         editingGroups[groupIndex].links.splice(linkIndex, 1);
         renderGroups();
-        updateSaveButton();
+        flushSave();
       }
       break;
 
     case "clear-groups":
       if (confirm("Are you sure you want to clear all link groups?")) {
         editingGroups = [];
-        syncSet({ [setKey(editingSetName)]: { groups: editingGroups } })
-          .then(() => {
-            markGroupsSaved();
-            renderGroups();
-            updateSaveButton();
-            showStatus("Groups cleared successfully!", "success");
-          })
-          .catch((err) => {
-            showStatus("Error clearing groups", "error");
-            console.error(err);
-          });
-      }
-      break;
-
-    case "save":
-      saveAll()
-        .then(() => {
-          markMetaSaved();
-          markGroupsSaved();
-          updateSaveButton();
-          showStatus("Changes saved successfully!", "success");
-        })
-        .catch((err) => {
-          showStatus("Error saving changes", "error");
-          console.error(err);
+        renderGroups();
+        flushSave().then(() => {
+          showStatus("Groups cleared successfully!", "success");
         });
+      }
       break;
 
     case "new-set": {
@@ -334,10 +305,6 @@ function handleButtonClick(e) {
       meta.setNames.push(name);
       syncSet({ [SYNC_META_KEY]: meta, [setKey(name)]: { groups: [] } })
         .then(() => {
-          markMetaSaved();
-          // Show the new tab even if the switch is declined below (it
-          // prompts when the current set has unsaved edits)
-          renderSetControls();
           switchEditingSet(name);
           showStatus(`Set "${name}" created`, "success");
         })
@@ -357,16 +324,12 @@ function handleButtonClick(e) {
       );
       if (!newName || newName === oldName) break;
       meta.setNames[meta.setNames.indexOf(oldName)] = newName;
-      // Copy the stored groups (not the in-memory ones) so a rename doesn't
-      // silently persist unsaved edits; those stay pending under the new name.
-      loadSetGroups(oldName)
-        .then((groups) =>
-          syncSet({ [SYNC_META_KEY]: meta, [setKey(newName)]: { groups } }),
-        )
+      editingSetName = newName;
+      // flushSave writes the groups under the new key; the old key just
+      // needs removing
+      flushSave()
         .then(() => syncRemove([setKey(oldName)]))
         .then(() => {
-          markMetaSaved();
-          editingSetName = newName;
           if (activeSetName === oldName) {
             activeSetName = newName;
             return setActiveSetName(newName);
@@ -383,6 +346,33 @@ function handleButtonClick(e) {
       break;
     }
 
+    case "export-set":
+      downloadJson(`tabby-set-${toFilename(editingSetName)}.json`, {
+        groups: editingGroups,
+      });
+      break;
+
+    case "import-set":
+      pickJsonFile()
+        .then((data) => {
+          // Accepts a bare groups array or a { groups } export
+          const groups = Array.isArray(data) ? data : data && data.groups;
+          if (!Array.isArray(groups)) {
+            throw new Error("Expected a groups array or { groups } object");
+          }
+          editingGroups = groups;
+          renderGroups();
+          return flushSave();
+        })
+        .then(() => {
+          showStatus(`Imported into "${editingSetName}"`, "success");
+        })
+        .catch((err) => {
+          showStatus("Error importing set: " + err.message, "error");
+          console.error(err);
+        });
+      break;
+
     case "delete-set": {
       if (meta.setNames.length === 1) {
         showStatus("Cannot delete the only set", "error");
@@ -391,22 +381,21 @@ function handleButtonClick(e) {
       const name = editingSetName;
       if (!confirm(`Are you sure you want to delete the set "${name}"?`))
         break;
+      // Drop any pending save aimed at the doomed set
+      cancelPendingSave();
       meta.setNames.splice(meta.setNames.indexOf(name), 1);
       const fallback = meta.setNames[0];
       syncRemove([setKey(name)])
         .then(() => syncSet({ [SYNC_META_KEY]: meta }))
         .then(async () => {
-          markMetaSaved();
           if (activeSetName === name) {
             activeSetName = fallback;
             await setActiveSetName(fallback);
           }
           editingSetName = fallback;
           editingGroups = await loadSetGroups(fallback);
-          markGroupsSaved();
           renderSetControls();
           renderGroups();
-          updateSaveButton();
           showStatus(`Set "${name}" deleted`, "success");
         })
         .catch((err) => {
@@ -445,6 +434,8 @@ function handleButtonClick(e) {
 }
 
 async function importAllData(data) {
+  // A pending save could restore pre-import state under a stale key
+  cancelPendingSave();
   let importedSettings = { ...defaultSettings };
   let importedSets;
   // Handle old array format
@@ -484,10 +475,8 @@ async function importAllData(data) {
   if (staleKeys.length) {
     await syncRemove(staleKeys);
   }
-  markMetaSaved();
   editingSetName = names.includes(editingSetName) ? editingSetName : names[0];
   editingGroups = importedSets[editingSetName];
-  markGroupsSaved();
   if (!names.includes(activeSetName)) {
     activeSetName = names[0];
     await setActiveSetName(activeSetName);
@@ -495,7 +484,6 @@ async function importAllData(data) {
   renderSettings();
   renderSetControls();
   renderGroups();
-  updateSaveButton();
   showStatus("Data imported successfully!", "success");
 }
 
@@ -514,13 +502,16 @@ async function init() {
     editingSetName = activeSetName;
     editingGroups = await loadSetGroups(editingSetName);
 
-    markMetaSaved();
-    markGroupsSaved();
-
     renderSettings();
     renderSetControls();
     renderGroups();
-    updateSaveButton();
+
+    // Best-effort flush of a debounced save if the page closes mid-typing
+    window.addEventListener("beforeunload", () => {
+      if (saveTimer) {
+        flushSave();
+      }
+    });
 
     // Event listeners
     document
@@ -739,7 +730,7 @@ function setupDragAndDrop() {
       // Insert at new position (no adjustment needed - we already skipped dragged item when counting)
       editingGroups.splice(toIndex, 0, movedGroup);
       renderGroups();
-      updateSaveButton();
+      flushSave();
     } else if (dragType === "link" && placeholder && placeholder.parentNode) {
       const linksContainer = placeholder.closest(".links-container");
       if (linksContainer) {
@@ -768,7 +759,7 @@ function setupDragAndDrop() {
         // Insert at new position (no adjustment needed - we already skipped dragged item when counting)
         editingGroups[toGroupIndex].links.splice(toLinkIndex, 0, movedLink);
         renderGroups();
-        updateSaveButton();
+        flushSave();
       }
     }
 
