@@ -1,54 +1,6 @@
 const MAX_IMAGE_INDEX = 64;
 const MAX_CHRISTMAS_INDEX = 50;
 
-// Default data structure
-const defaultData = {
-  settings: {
-    showLinks: true,
-    showClock: true,
-  },
-  groups: [
-    {
-      label: "Development",
-      hide: false,
-      links: [
-        { label: "GitHub", url: "https://github.com", hide: false },
-        {
-          label: "Stack Overflow",
-          url: "https://stackoverflow.com",
-          hide: false,
-        },
-        { label: "MDN", url: "https://developer.mozilla.org", hide: false },
-      ],
-    },
-    {
-      label: "Social",
-      hide: false,
-      links: [
-        { label: "Twitter", url: "https://twitter.com", hide: false },
-        { label: "LinkedIn", url: "https://linkedin.com", hide: false },
-      ],
-    },
-  ],
-};
-
-async function loadData() {
-  return new Promise((resolve) => {
-    chrome.storage.sync.get(["tabbyData"], (result) => {
-      const data = result.tabbyData || defaultData;
-      // Handle old array format
-      if (Array.isArray(data)) {
-        resolve({
-          settings: { showLinks: true, showClock: true },
-          groups: data,
-        });
-      } else {
-        resolve(data);
-      }
-    });
-  });
-}
-
 const getSeason = () => {
   const now = new Date();
   const month = now.getMonth() + 1;
@@ -154,18 +106,31 @@ const months = [
   "Dec",
 ];
 
-const getFormattedTime = () => {
+const getFormattedTime = (settings) => {
   const now = new Date();
   const dayOfTheWeek = daysOfTheWeek[now.getDay()];
   const month = months[now.getMonth()];
   const dayOfTheMonth = now.getDate();
-  const hours = now.getHours();
+  let hours = now.getHours();
+  let suffix = "";
+  if (settings.twelveHourClock) {
+    suffix = hours < 12 ? " AM" : " PM";
+    hours = hours % 12 || 12;
+  }
   const minutes = now.getMinutes();
   const seconds = now.getSeconds();
-  const formattedHours = hours < 10 ? `0${hours}` : hours;
+  // 12-hour times are conventionally unpadded
+  const formattedHours =
+    hours < 10 && !settings.twelveHourClock ? `0${hours}` : hours;
   const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
   const formattedSeconds = seconds < 10 ? `0${seconds}` : seconds;
-  return `${dayOfTheWeek} ${month} ${dayOfTheMonth} \u2022 ${formattedHours}:${formattedMinutes}:${formattedSeconds}`;
+  const secondsPart = settings.showSeconds ? `:${formattedSeconds}` : "";
+  const datePart = `${dayOfTheWeek} ${month} ${dayOfTheMonth}`;
+  const timePart = `${formattedHours}:${formattedMinutes}${secondsPart}${suffix}`;
+  if (settings.showDate && settings.showTime) {
+    return `${datePart} \u2022 ${timePart}`;
+  }
+  return settings.showDate ? datePart : timePart;
 };
 
 function renderGroups(groups) {
@@ -204,15 +169,61 @@ function renderGroups(groups) {
   });
 }
 
-function updateClock() {
+function initSetSwitcher(setNames, activeSetName) {
+  const toggle = document.getElementById("set-switcher-toggle");
+  const menu = document.getElementById("set-switcher-menu");
+  toggle.textContent = activeSetName;
+
+  const renderMenu = (currentName) => {
+    menu.innerHTML = "";
+    setNames.forEach((name) => {
+      const item = document.createElement("a");
+      item.className =
+        "set-switcher-item" + (name === currentName ? " current" : "");
+      item.textContent = name;
+      item.addEventListener("click", async () => {
+        menu.hidden = true;
+        if (name === currentName) return;
+        await setActiveSetName(name);
+        toggle.textContent = name;
+        renderGroups(await loadSetGroups(name));
+        renderMenu(name);
+      });
+      menu.appendChild(item);
+    });
+  };
+  renderMenu(activeSetName);
+
+  toggle.addEventListener("click", (e) => {
+    e.preventDefault();
+    menu.hidden = !menu.hidden;
+  });
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".set-switcher")) {
+      menu.hidden = true;
+    }
+  });
+}
+
+function updateClock(settings) {
   const clockSpan = document.querySelector("#clock span");
   if (clockSpan) {
-    clockSpan.textContent = getFormattedTime();
+    clockSpan.textContent = getFormattedTime(settings);
   }
 }
 
 async function init() {
-  const tabbyData = await loadData();
+  const meta = await loadMeta();
+
+  // Each panel zooms independently off its own multiplier
+  document.documentElement.style.setProperty(
+    "--links-scale",
+    meta.settings.linksScale,
+  );
+  document.documentElement.style.setProperty(
+    "--clock-scale",
+    meta.settings.clockScale,
+  );
 
   // Settings link
   document.getElementById("settings-link").addEventListener("click", (e) => {
@@ -220,21 +231,26 @@ async function init() {
     chrome.runtime.openOptionsPage();
   });
 
-  // Handle showLinks setting
+  // Handle showLinks setting (the set switcher only affects links, so it
+  // hides along with them)
   const linkGroupsSection = document.getElementById("link-groups");
-  if (!tabbyData.settings.showLinks) {
+  const setSwitcher = document.getElementById("set-switcher");
+  if (!meta.settings.showLinks) {
     linkGroupsSection.style.display = "none";
+    setSwitcher.style.display = "none";
   } else {
-    renderGroups(tabbyData.groups);
+    const activeSetName = await getActiveSetName(meta.setNames);
+    renderGroups(await loadSetGroups(activeSetName));
+    initSetSwitcher(meta.setNames, activeSetName);
   }
 
-  // Handle showClock setting
+  // The clock panel only shows when at least one of its segments does
   const clockSection = document.getElementById("clock");
-  if (!tabbyData.settings.showClock) {
+  if (!meta.settings.showDate && !meta.settings.showTime) {
     clockSection.style.display = "none";
   } else {
-    updateClock();
-    setInterval(updateClock, 100);
+    updateClock(meta.settings);
+    setInterval(() => updateClock(meta.settings), 100);
   }
 
   // Set background image and colors

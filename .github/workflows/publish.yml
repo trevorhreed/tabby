@@ -4,6 +4,9 @@ on:
   push:
     branches: [release]
 
+permissions:
+  contents: write
+
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -18,6 +21,17 @@ jobs:
           NEW_VERSION="${MAJOR_MINOR}.$((PATCH + 1))"
           jq --arg v "$NEW_VERSION" '.version = $v' manifest.json > manifest.tmp && mv manifest.tmp manifest.json
           echo "Version: $VERSION -> $NEW_VERSION"
+
+      # Without this the repo stays on the old version and every later run
+      # recomputes the same number, which the store rejects. Pushes made
+      # with GITHUB_TOKEN don't retrigger workflows, so this can't loop.
+      - name: Commit version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add manifest.json
+          git commit -m "Auto-bump patch version before publishing"
+          git push
 
       - name: Create ZIP package
         run: |

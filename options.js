@@ -1,84 +1,40 @@
-// Default data structure
-const defaultData = {
-  settings: {
-    showLinks: true,
-    showClock: true,
-  },
-  groups: [
-    {
-      label: "Development",
-      hide: false,
-      links: [
-        { label: "GitHub", url: "https://github.com", hide: false },
-        {
-          label: "Stack Overflow",
-          url: "https://stackoverflow.com",
-          hide: false,
-        },
-        { label: "MDN", url: "https://developer.mozilla.org", hide: false },
-      ],
-    },
-    {
-      label: "Social",
-      hide: false,
-      links: [
-        { label: "Twitter", url: "https://twitter.com", hide: false },
-        { label: "LinkedIn", url: "https://linkedin.com", hide: false },
-      ],
-    },
-  ],
-};
-
 // Check if we're in a Chrome extension context
 const isExtension =
   typeof chrome !== "undefined" && chrome.storage && chrome.storage.sync;
 
-let tabbyData = { settings: { showLinks: true, showClock: true }, groups: [] };
-let savedDataJson = JSON.stringify(tabbyData);
+// Debounce keystroke-driven saves; chrome.storage.sync throttles writes
+// (120/minute), so per-keystroke writes could hit the quota
+const SAVE_DEBOUNCE_MS = 500;
 
-async function loadData() {
-  if (!isExtension) {
-    throw new Error(
-      "This page must be loaded as a Chrome extension to access synced storage",
-    );
-  }
+let meta = { settings: { ...defaultSettings }, setNames: [] };
+let editingSetName = null;
+let editingGroups = [];
+let activeSetName = null;
+let saveTimer = null;
 
-  return new Promise((resolve, reject) => {
-    chrome.storage.sync.get(["tabbyData"], (result) => {
-      if (chrome.runtime.lastError) {
-        reject(chrome.runtime.lastError);
-      } else {
-        resolve(result.tabbyData || defaultData);
-      }
-    });
+function saveAll() {
+  return syncSet({
+    [SYNC_META_KEY]: meta,
+    [setKey(editingSetName)]: { groups: editingGroups },
   });
 }
 
-async function saveDataToStorage(data) {
-  if (!isExtension) {
-    throw new Error(
-      "This page must be loaded as a Chrome extension to access synced storage",
-    );
-  }
+function cancelPendingSave() {
+  clearTimeout(saveTimer);
+  saveTimer = null;
+}
 
-  return new Promise((resolve, reject) => {
-    chrome.storage.sync.set({ tabbyData: data }, () => {
-      if (chrome.runtime.lastError) {
-        reject(chrome.runtime.lastError);
-      } else {
-        resolve();
-      }
-    });
+function flushSave() {
+  cancelPendingSave();
+  return saveAll().catch((err) => {
+    showStatus("Error saving changes", "error");
+    console.error(err);
   });
 }
 
-function hasUnsavedChanges() {
-  return JSON.stringify(tabbyData) !== savedDataJson;
-}
-
-function updateSaveButton() {
-  const saveBtn = document.getElementById("save-btn");
-  saveBtn.disabled = !hasUnsavedChanges();
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(flushSave, SAVE_DEBOUNCE_MS);
 }
 
 function showStatus(message, type) {
@@ -91,16 +47,167 @@ function showStatus(message, type) {
   }, 3000);
 }
 
+// Maps settings-checkbox element ids to their settings keys
+const SETTING_CHECKBOXES = {
+  "show-links": "showLinks",
+  "show-date": "showDate",
+  "show-time": "showTime",
+  "twelve-hour-clock": "twelveHourClock",
+  "show-seconds": "showSeconds",
+};
+
+// Maps settings-slider element ids to their settings keys; each slider has
+// a matching "<id>-value" percentage readout
+const SETTING_SLIDERS = {
+  "links-scale": "linksScale",
+  "clock-scale": "clockScale",
+};
+
 function renderSettings() {
-  document.getElementById("show-links").checked = tabbyData.settings.showLinks;
-  document.getElementById("show-clock").checked = tabbyData.settings.showClock;
+  Object.entries(SETTING_CHECKBOXES).forEach(([id, key]) => {
+    document.getElementById(id).checked = meta.settings[key];
+  });
+  Object.entries(SETTING_SLIDERS).forEach(([id, key]) => {
+    document.getElementById(id).value = meta.settings[key];
+    renderScaleValue(id, key);
+  });
+}
+
+function renderScaleValue(id, key) {
+  document.getElementById(`${id}-value`).textContent =
+    Math.round(meta.settings[key] * 100) + "%";
+}
+
+function renderSetTabs() {
+  const tabs = document.getElementById("set-tabs");
+  tabs.innerHTML = "";
+  meta.setNames.forEach((name) => {
+    const tab = document.createElement("button");
+    tab.className = "set-tab" + (name === editingSetName ? " active" : "");
+    tab.textContent = name;
+    tab.addEventListener("click", () => {
+      if (name !== editingSetName) {
+        switchEditingSet(name);
+      }
+    });
+    tabs.appendChild(tab);
+  });
+  // The trailing tab always creates a new set; handleButtonClick picks it
+  // up through its data-action like the other set buttons
+  const newTab = document.createElement("button");
+  newTab.className = "set-tab new-set-tab";
+  newTab.dataset.action = "new-set";
+  newTab.textContent = "+ New";
+  tabs.appendChild(newTab);
+}
+
+function downloadJson(filename, value) {
+  const blob = new Blob([JSON.stringify(value, null, 2)], {
+    type: "application/json",
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// Resolves with the parsed JSON; never settles if the dialog is cancelled
+// (no change event fires), which safely abandons the import
+function pickJsonFile() {
+  return new Promise((resolve, reject) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json,application/json";
+    input.addEventListener("change", () => {
+      const file = input.files[0];
+      if (!file) return;
+      file.text().then((text) => {
+        try {
+          resolve(JSON.parse(text));
+        } catch (err) {
+          reject(err);
+        }
+      }, reject);
+    });
+    input.click();
+  });
+}
+
+const toFilename = (name) => name.replace(/[^\w-]+/g, "_");
+
+// Modal offering both import paths: upload a JSON file or paste JSON text.
+// Resolves with the parsed value, or null if cancelled. A paste that fails
+// to parse keeps the dialog open for correction. Handlers are assigned via
+// onclick so reopening the dialog replaces them instead of stacking.
+function pickJsonInput(title) {
+  return new Promise((resolve) => {
+    const overlay = document.getElementById("import-dialog");
+    const textarea = document.getElementById("import-dialog-text");
+    document.getElementById("import-dialog-title").textContent = title;
+    textarea.value = "";
+    overlay.hidden = false;
+
+    const close = (value) => {
+      overlay.hidden = true;
+      resolve(value);
+    };
+
+    document.getElementById("import-dialog-upload").onclick = () => {
+      pickJsonFile().then(close, (err) => {
+        showStatus("Error reading file: " + err.message, "error");
+      });
+    };
+    document.getElementById("import-dialog-confirm").onclick = () => {
+      try {
+        close(JSON.parse(textarea.value));
+      } catch (err) {
+        showStatus("Invalid JSON: " + err.message, "error");
+      }
+    };
+    document.getElementById("import-dialog-cancel").onclick = () => close(null);
+    overlay.onclick = (e) => {
+      if (e.target === overlay) close(null);
+    };
+  });
+}
+
+// allowName lets a rename keep its current name without a duplicate error
+function promptForSetName(message, defaultValue = "", allowName = null) {
+  const name = prompt(message, defaultValue);
+  if (name === null) return null;
+  const trimmed = name.trim();
+  if (!trimmed) {
+    showStatus("Set name cannot be empty", "error");
+    return null;
+  }
+  if (trimmed !== allowName && meta.setNames.includes(trimmed)) {
+    showStatus(`A set named "${trimmed}" already exists`, "error");
+    return null;
+  }
+  return trimmed;
+}
+
+async function switchEditingSet(name) {
+  // Flush so a pending debounced save can't land on the wrong set
+  if (saveTimer) {
+    await flushSave();
+  }
+  editingSetName = name;
+  editingGroups = await loadSetGroups(name);
+  // The selected tab also becomes the set this device's new tab shows
+  activeSetName = name;
+  await setActiveSetName(name);
+  renderSetTabs();
+  renderGroups();
 }
 
 function renderGroups() {
   const container = document.getElementById("groups-container");
   container.innerHTML = "";
 
-  tabbyData.groups.forEach((group, groupIndex) => {
+  editingGroups.forEach((group, groupIndex) => {
     const groupDiv = document.createElement("div");
     groupDiv.className = "group";
     groupDiv.dataset.groupIndex = groupIndex;
@@ -154,13 +261,11 @@ function escapeHtml(text) {
 }
 
 function handleSettingChange(e) {
-  const field = e.target.id;
-  if (field === "show-links") {
-    tabbyData.settings.showLinks = e.target.checked;
-  } else if (field === "show-clock") {
-    tabbyData.settings.showClock = e.target.checked;
+  const key = SETTING_CHECKBOXES[e.target.id];
+  if (key) {
+    meta.settings[key] = e.target.checked;
   }
-  updateSaveButton();
+  flushSave();
 }
 
 function handleGroupChange(e) {
@@ -168,11 +273,11 @@ function handleGroupChange(e) {
   const field = e.target.dataset.field;
 
   if (field === "label") {
-    tabbyData.groups[groupIndex].label = e.target.value;
+    editingGroups[groupIndex].label = e.target.value;
   } else if (field === "hide") {
-    tabbyData.groups[groupIndex].hide = e.target.checked;
+    editingGroups[groupIndex].hide = e.target.checked;
   }
-  updateSaveButton();
+  scheduleSave();
 }
 
 function handleLinkChange(e) {
@@ -181,13 +286,13 @@ function handleLinkChange(e) {
   const field = e.target.dataset.field;
 
   if (field === "label") {
-    tabbyData.groups[groupIndex].links[linkIndex].label = e.target.value;
+    editingGroups[groupIndex].links[linkIndex].label = e.target.value;
   } else if (field === "url") {
-    tabbyData.groups[groupIndex].links[linkIndex].url = e.target.value;
+    editingGroups[groupIndex].links[linkIndex].url = e.target.value;
   } else if (field === "hide") {
-    tabbyData.groups[groupIndex].links[linkIndex].hide = e.target.checked;
+    editingGroups[groupIndex].links[linkIndex].hide = e.target.checked;
   }
-  updateSaveButton();
+  scheduleSave();
 }
 
 function handleButtonClick(e) {
@@ -199,123 +304,240 @@ function handleButtonClick(e) {
 
   switch (action) {
     case "add-group":
-      tabbyData.groups.push({
+      editingGroups.push({
         label: "New Group",
         hide: false,
         links: [],
       });
       renderGroups();
-      updateSaveButton();
+      flushSave();
       break;
 
     case "delete-group":
       if (confirm("Are you sure you want to delete this group?")) {
-        tabbyData.groups.splice(groupIndex, 1);
+        editingGroups.splice(groupIndex, 1);
         renderGroups();
-        updateSaveButton();
+        flushSave();
       }
       break;
 
     case "add-link":
-      tabbyData.groups[groupIndex].links.push({
+      editingGroups[groupIndex].links.push({
         label: "New Link",
         url: "https://",
         hide: false,
       });
       renderGroups();
-      updateSaveButton();
+      flushSave();
       break;
 
     case "delete-link":
       if (confirm("Are you sure you want to delete this link?")) {
-        tabbyData.groups[groupIndex].links.splice(linkIndex, 1);
+        editingGroups[groupIndex].links.splice(linkIndex, 1);
         renderGroups();
-        updateSaveButton();
+        flushSave();
       }
       break;
 
     case "clear-groups":
       if (confirm("Are you sure you want to clear all link groups?")) {
-        tabbyData.groups = [];
-        saveDataToStorage(tabbyData)
-          .then(() => {
-            savedDataJson = JSON.stringify(tabbyData);
-            renderGroups();
-            updateSaveButton();
-            showStatus("Groups cleared successfully!", "success");
-          })
-          .catch((err) => {
-            showStatus("Error clearing groups", "error");
-            console.error(err);
-          });
+        editingGroups = [];
+        renderGroups();
+        flushSave().then(() => {
+          showStatus("Groups cleared successfully!", "success");
+        });
       }
       break;
 
-    case "save":
-      saveDataToStorage(tabbyData)
+    case "new-set": {
+      const name = promptForSetName("Name for the new set:");
+      if (!name) break;
+      meta.setNames.push(name);
+      syncSet({ [SYNC_META_KEY]: meta, [setKey(name)]: { groups: [] } })
         .then(() => {
-          savedDataJson = JSON.stringify(tabbyData);
-          updateSaveButton();
-          showStatus("Changes saved successfully!", "success");
+          switchEditingSet(name);
+          showStatus(`Set "${name}" created`, "success");
         })
         .catch((err) => {
-          showStatus("Error saving changes", "error");
+          showStatus("Error creating set", "error");
+          console.error(err);
+        });
+      break;
+    }
+
+    case "rename-set": {
+      const oldName = editingSetName;
+      const newName = promptForSetName(
+        `Rename "${oldName}" to:`,
+        oldName,
+        oldName,
+      );
+      if (!newName || newName === oldName) break;
+      meta.setNames[meta.setNames.indexOf(oldName)] = newName;
+      editingSetName = newName;
+      // flushSave writes the groups under the new key; the old key just
+      // needs removing
+      flushSave()
+        .then(() => syncRemove([setKey(oldName)]))
+        .then(() => {
+          if (activeSetName === oldName) {
+            activeSetName = newName;
+            return setActiveSetName(newName);
+          }
+        })
+        .then(() => {
+          renderSetTabs();
+          showStatus(`Renamed to "${newName}"`, "success");
+        })
+        .catch((err) => {
+          showStatus("Error renaming set", "error");
+          console.error(err);
+        });
+      break;
+    }
+
+    case "export-set":
+      downloadJson(`tabby-set-${toFilename(editingSetName)}.json`, {
+        groups: editingGroups,
+      });
+      break;
+
+    case "import-set":
+      pickJsonInput(`Import Into "${editingSetName}"`)
+        .then((data) => {
+          if (data === null) return;
+          // Accepts a bare groups array or a { groups } export
+          const groups = Array.isArray(data) ? data : data && data.groups;
+          if (!Array.isArray(groups)) {
+            throw new Error("Expected a groups array or { groups } object");
+          }
+          editingGroups = groups;
+          renderGroups();
+          return flushSave().then(() => {
+            showStatus(`Imported into "${editingSetName}"`, "success");
+          });
+        })
+        .catch((err) => {
+          showStatus("Error importing set: " + err.message, "error");
           console.error(err);
         });
       break;
 
-    case "export":
-      document.getElementById("import-export-text").value = JSON.stringify(
-        tabbyData,
-        null,
-        2,
-      );
-      showStatus("Data exported to text area", "success");
+    case "delete-set": {
+      if (meta.setNames.length === 1) {
+        showStatus("Cannot delete the only set", "error");
+        break;
+      }
+      const name = editingSetName;
+      if (!confirm(`Are you sure you want to delete the set "${name}"?`))
+        break;
+      // Drop any pending save aimed at the doomed set
+      cancelPendingSave();
+      meta.setNames.splice(meta.setNames.indexOf(name), 1);
+      const fallback = meta.setNames[0];
+      syncRemove([setKey(name)])
+        .then(() => syncSet({ [SYNC_META_KEY]: meta }))
+        .then(async () => {
+          if (activeSetName === name) {
+            activeSetName = fallback;
+            await setActiveSetName(fallback);
+          }
+          editingSetName = fallback;
+          editingGroups = await loadSetGroups(fallback);
+          renderSetTabs();
+          renderGroups();
+          showStatus(`Set "${name}" deleted`, "success");
+        })
+        .catch((err) => {
+          showStatus("Error deleting set", "error");
+          console.error(err);
+        });
       break;
+    }
+
+    case "export": {
+      const keys = meta.setNames.map(setKey);
+      syncGet(keys)
+        .then((result) => {
+          const sets = {};
+          meta.setNames.forEach((name) => {
+            sets[name] = (result[setKey(name)] || { groups: [] }).groups;
+          });
+          downloadJson("tabby-backup.json", { settings: meta.settings, sets });
+        })
+        .catch((err) => {
+          showStatus("Error exporting data", "error");
+          console.error(err);
+        });
+      break;
+    }
 
     case "import":
-      try {
-        const text = document.getElementById("import-export-text").value;
-        const data = JSON.parse(text);
-
-        // Handle old array format
-        let importedData;
-        if (Array.isArray(data)) {
-          importedData = {
-            settings: { showLinks: true, showClock: true },
-            groups: data,
-          };
-        } else {
-          importedData = data;
-          if (!importedData.settings) {
-            importedData.settings = { showLinks: true, showClock: true };
-          }
-        }
-
-        // Validate
-        if (!Array.isArray(importedData.groups)) {
-          throw new Error("Groups data must be an array");
-        }
-
-        tabbyData = importedData;
-        saveDataToStorage(tabbyData)
-          .then(() => {
-            savedDataJson = JSON.stringify(tabbyData);
-            renderSettings();
-            renderGroups();
-            updateSaveButton();
-            showStatus("Data imported successfully!", "success");
-          })
-          .catch((err) => {
-            showStatus("Error importing data", "error");
-            console.error(err);
-          });
-      } catch (err) {
-        showStatus("Error importing data: " + err.message, "error");
-        console.error(err);
-      }
+      pickJsonInput("Import All Data")
+        .then((data) => {
+          if (data === null) return;
+          return importAllData(data);
+        })
+        .catch((err) => {
+          showStatus("Error importing data: " + err.message, "error");
+          console.error(err);
+        });
       break;
   }
+}
+
+async function importAllData(data) {
+  // A pending save could restore pre-import state under a stale key
+  cancelPendingSave();
+  let importedSettings = { ...defaultSettings };
+  let importedSets;
+  // Handle old array format
+  if (Array.isArray(data)) {
+    importedSets = { [DEFAULT_SET_NAME]: data };
+  } else if (data && data.sets) {
+    importedSettings = { ...defaultSettings, ...data.settings };
+    importedSets = data.sets;
+  } else if (data && data.groups) {
+    // Single-set format from before link sets existed
+    importedSettings = { ...defaultSettings, ...data.settings };
+    importedSets = { [DEFAULT_SET_NAME]: data.groups };
+  } else {
+    throw new Error("Unrecognized data format");
+  }
+
+  // Validate
+  const names = Object.keys(importedSets);
+  if (names.length === 0) {
+    throw new Error("At least one link set is required");
+  }
+  names.forEach((name) => {
+    if (!Array.isArray(importedSets[name])) {
+      throw new Error(`Groups for set "${name}" must be an array`);
+    }
+  });
+
+  const staleKeys = meta.setNames
+    .filter((name) => !names.includes(name))
+    .map(setKey);
+  meta = { settings: importedSettings, setNames: names };
+  const items = { [SYNC_META_KEY]: meta };
+  names.forEach((name) => {
+    items[setKey(name)] = { groups: importedSets[name] };
+  });
+  await syncSet(items);
+  if (staleKeys.length) {
+    await syncRemove(staleKeys);
+  }
+  editingSetName = names.includes(editingSetName) ? editingSetName : names[0];
+  editingGroups = importedSets[editingSetName];
+  if (!names.includes(activeSetName)) {
+    activeSetName = names[0];
+    await setActiveSetName(activeSetName);
+  }
+  renderSettings();
+  renderSetTabs();
+  renderGroups();
+  showStatus("Data imported successfully!", "success");
 }
 
 async function init() {
@@ -328,31 +550,37 @@ async function init() {
   }
 
   try {
-    const loadedData = await loadData();
-
-    // Handle old array format
-    if (Array.isArray(loadedData)) {
-      tabbyData = {
-        settings: { showLinks: true, showClock: true },
-        groups: loadedData,
-      };
-    } else {
-      tabbyData = loadedData;
-    }
-
-    savedDataJson = JSON.stringify(tabbyData);
+    meta = await loadMeta();
+    activeSetName = await getActiveSetName(meta.setNames);
+    editingSetName = activeSetName;
+    editingGroups = await loadSetGroups(editingSetName);
 
     renderSettings();
+    renderSetTabs();
     renderGroups();
-    updateSaveButton();
+
+    // Best-effort flush of a debounced save if the page closes mid-typing
+    window.addEventListener("beforeunload", () => {
+      if (saveTimer) {
+        flushSave();
+      }
+    });
 
     // Event listeners
-    document
-      .getElementById("show-links")
-      .addEventListener("change", handleSettingChange);
-    document
-      .getElementById("show-clock")
-      .addEventListener("change", handleSettingChange);
+    Object.keys(SETTING_CHECKBOXES).forEach((id) => {
+      document
+        .getElementById(id)
+        .addEventListener("change", handleSettingChange);
+    });
+
+    // Debounced while dragging, so the sliders don't burn write quota
+    Object.entries(SETTING_SLIDERS).forEach(([id, key]) => {
+      document.getElementById(id).addEventListener("input", (e) => {
+        meta.settings[key] = parseFloat(e.target.value);
+        renderScaleValue(id, key);
+        scheduleSave();
+      });
+    });
 
     document.addEventListener("input", (e) => {
       if (
@@ -549,17 +777,17 @@ function setupDragAndDrop() {
       }
 
       // Remove from source first
-      const [movedGroup] = tabbyData.groups.splice(dragFromGroupIndex, 1);
+      const [movedGroup] = editingGroups.splice(dragFromGroupIndex, 1);
       // Insert at new position (no adjustment needed - we already skipped dragged item when counting)
-      tabbyData.groups.splice(toIndex, 0, movedGroup);
+      editingGroups.splice(toIndex, 0, movedGroup);
       renderGroups();
-      updateSaveButton();
+      flushSave();
     } else if (dragType === "link" && placeholder && placeholder.parentNode) {
       const linksContainer = placeholder.closest(".links-container");
       if (linksContainer) {
         const toGroupIndex = parseInt(linksContainer.dataset.group);
         const movedLink =
-          tabbyData.groups[dragFromGroupIndex].links[dragFromLinkIndex];
+          editingGroups[dragFromGroupIndex].links[dragFromLinkIndex];
 
         // Find position of placeholder (skipping dragged item)
         let toLinkIndex = 0;
@@ -577,12 +805,12 @@ function setupDragAndDrop() {
         }
 
         // Remove from source
-        tabbyData.groups[dragFromGroupIndex].links.splice(dragFromLinkIndex, 1);
+        editingGroups[dragFromGroupIndex].links.splice(dragFromLinkIndex, 1);
 
         // Insert at new position (no adjustment needed - we already skipped dragged item when counting)
-        tabbyData.groups[toGroupIndex].links.splice(toLinkIndex, 0, movedLink);
+        editingGroups[toGroupIndex].links.splice(toLinkIndex, 0, movedLink);
         renderGroups();
-        updateSaveButton();
+        flushSave();
       }
     }
 

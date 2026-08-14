@@ -1,6 +1,7 @@
 <!doctype html>
 <html>
   <head>
+    <meta charset="utf-8" />
     <title>Tabby Options</title>
     <link rel="icon" type="image/png" sizes="32x32" href="icons/icon48.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="icons/icon16.png" />
@@ -289,6 +290,54 @@
         border-radius: 5px;
       }
 
+      .btn-secondary {
+        background-color: var(--secondary-color);
+        color: var(--text-color);
+      }
+
+      .btn-secondary:hover {
+        background-color: var(--border-color);
+      }
+
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+      }
+
+      .modal-overlay[hidden] {
+        display: none;
+      }
+
+      .modal {
+        background: var(--container-bg);
+        border-radius: 8px;
+        box-shadow: var(--shadow);
+        padding: 20px;
+        width: 500px;
+        max-width: 90%;
+      }
+
+      .modal h3 {
+        margin-top: 0;
+        color: var(--primary-color);
+      }
+
+      .modal textarea {
+        height: 150px;
+      }
+
+      .modal-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        margin-top: 15px;
+      }
+
       .status {
         position: fixed;
         top: 20px;
@@ -346,6 +395,49 @@
         transform: scale(1.2);
       }
 
+      .set-tabs {
+        display: flex;
+        gap: 4px;
+        flex-wrap: wrap;
+        border-bottom: 2px solid var(--secondary-color);
+        margin-bottom: 20px;
+      }
+
+      .set-tab {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px 5px 0 0;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.3s;
+        background: none;
+        color: var(--text-muted);
+      }
+
+      .set-tab:hover {
+        background-color: var(--secondary-color);
+        color: var(--text-color);
+      }
+
+      /* Matches the settings panels so the active tab reads as "open" */
+      .set-tab.active {
+        background-color: var(--secondary-color);
+        color: var(--primary-color);
+        font-weight: 500;
+      }
+
+      .set-tab.new-set-tab {
+        background: none;
+        border: 1px dashed var(--border-color);
+        border-bottom: none;
+        color: var(--text-muted);
+      }
+
+      .set-tab.new-set-tab:hover {
+        color: var(--primary-color);
+        border-color: var(--primary-color);
+      }
+
       .import-export h3 {
         margin-top: 0;
       }
@@ -367,18 +459,6 @@
     <div class="container">
       <h1>Tabby Options</h1>
 
-      <div style="text-align: center; margin-bottom: 30px">
-        <button
-          id="save-btn"
-          class="btn btn-success"
-          data-action="save"
-          disabled
-          style="font-size: 16px; padding: 12px 30px"
-        >
-          Save All Changes
-        </button>
-      </div>
-
       <div class="settings-section">
         <h2>Display Settings</h2>
         <div class="setting-item">
@@ -392,12 +472,49 @@
         </div>
         <div class="setting-item">
           <label>
-            <input type="checkbox" id="show-clock" />
-            Show Clock
+            <input type="checkbox" id="show-date" />
+            Show Date
           </label>
           <small style="color: var(--text-muted); margin-left: 10px"
-            >Display the time in the bottom right corner</small
+            >Include the date on the clock</small
           >
+        </div>
+        <div class="setting-item">
+          <label>
+            <input type="checkbox" id="show-time" />
+            Show Time
+          </label>
+          <small style="color: var(--text-muted); margin-left: 10px"
+            >Include the time on the clock</small
+          >
+        </div>
+        <div class="setting-item">
+          <label>
+            <input type="checkbox" id="twelve-hour-clock" />
+            12-Hour Clock
+          </label>
+          <small style="color: var(--text-muted); margin-left: 10px"
+            >Show 1:30 PM instead of 13:30</small
+          >
+        </div>
+        <div class="setting-item">
+          <label>
+            <input type="checkbox" id="show-seconds" />
+            Show Seconds
+          </label>
+          <small style="color: var(--text-muted); margin-left: 10px"
+            >Include seconds on the clock</small
+          >
+        </div>
+        <div class="setting-item">
+          <input type="range" id="links-scale" min="0.25" max="8" step="0.05" />
+          <span id="links-scale-value"></span>
+          <label for="links-scale">Links Panel Scale</label>
+        </div>
+        <div class="setting-item">
+          <input type="range" id="clock-scale" min="0.25" max="8" step="0.05" />
+          <span id="clock-scale-value"></span>
+          <label for="clock-scale">Clock Scale</label>
         </div>
       </div>
 
@@ -411,35 +528,66 @@
         Link Groups
       </h2>
 
+      <div id="set-tabs" class="set-tabs"></div>
+
       <div class="actions">
-        <button class="btn btn-primary" data-action="add-group">
-          Add Group
-        </button>
+        <button class="btn btn-primary" data-action="rename-set">Rename</button>
+        <button class="btn btn-primary" data-action="export-set">Export</button>
+        <button class="btn btn-primary" data-action="import-set">Import</button>
         <button class="btn btn-danger" data-action="clear-groups">Clear</button>
+        <button class="btn btn-danger" data-action="delete-set">Delete</button>
       </div>
 
       <div id="groups-container"></div>
 
+      <div class="actions" style="justify-content: flex-end">
+        <button class="btn btn-primary" data-action="add-group">
+          Add Group
+        </button>
+      </div>
+
       <div class="import-export">
         <h3 style="color: var(--primary-color)">Import/Export Data</h3>
-        <p>You can backup your data or import from a backup:</p>
         <div style="margin-bottom: 15px">
           <button class="btn btn-primary" data-action="export">
-            Export Data
+            Export All
           </button>
           <button class="btn btn-primary" data-action="import">
-            Import Data
+            Import All
           </button>
         </div>
+      </div>
+    </div>
+
+    <div id="import-dialog" class="modal-overlay" hidden>
+      <div class="modal">
+        <h3 id="import-dialog-title">Import</h3>
+        <div style="margin-bottom: 15px">
+          <button id="import-dialog-upload" class="btn btn-primary">
+            Upload JSON File
+          </button>
+          <span style="color: var(--text-muted); margin-left: 10px"
+            >or paste JSON below</span
+          >
+        </div>
         <textarea
-          id="import-export-text"
-          placeholder="Paste your exported data here for import..."
+          id="import-dialog-text"
+          placeholder="Paste JSON here..."
         ></textarea>
+        <div class="modal-actions">
+          <button id="import-dialog-cancel" class="btn btn-secondary">
+            Cancel
+          </button>
+          <button id="import-dialog-confirm" class="btn btn-success">
+            Import
+          </button>
+        </div>
       </div>
     </div>
 
     <div id="status" class="status"></div>
 
+    <script src="storage.js"></script>
     <script src="options.js"></script>
   </body>
 </html>

@@ -1,6 +1,7 @@
 <!doctype html>
 <html>
   <head>
+    <meta charset="utf-8" />
     <title>Tabby</title>
     <link rel="icon" type="image/png" sizes="32x32" href="icons/icon48.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="icons/icon16.png" />
@@ -12,6 +13,8 @@
         --text-hover: #ccc3;
         --panel-background: #000c;
         --font-size: 20px;
+        --links-scale: 1;
+        --clock-scale: 1;
       }
       html,
       body {
@@ -60,9 +63,16 @@
 
       .link-groups {
         display: inline-block;
+        /* zoom (not transform) so layout and scrolling scale with it */
+        zoom: var(--links-scale);
         overflow: auto;
+        /* never extend past the viewport; scroll instead */
         max-height: 100%;
+        max-width: 100%;
         box-sizing: border-box;
+        /* stack above the fixed clock when they overlap */
+        position: relative;
+        z-index: 2;
         border-top-left-radius: 0;
         border-top-right-radius: 0;
         border-bottom-left-radius: 0;
@@ -108,23 +118,45 @@
         position: fixed;
         bottom: 0rem;
         right: 0rem;
+        zoom: var(--clock-scale);
+        /* em, so it tracks the clock's own font size; tighter than the
+           default panel padding */
+        padding: 0.5em 0.75em;
+        z-index: 1;
         border-top-right-radius: 0;
         border-bottom-left-radius: 0;
         border-bottom-right-radius: 0;
 
         & span {
-          font-size: 3rem;
+          /* same base size as the links; the clock-scale setting adjusts it */
+          font-size: 1rem;
         }
       }
 
-      .settings-link {
+      /* Shared panel strip keeps the controls legible over busy photos */
+      .top-controls {
         position: fixed;
         top: 1rem;
         right: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.25rem;
+        border-radius: 0.75rem;
+        /* the panel class's overflow: auto would clip the dropdown menu */
+        overflow: visible;
+      }
+
+      .settings-link {
         color: var(--text);
-        opacity: 0.6;
+        opacity: 0.8;
         cursor: pointer;
-        padding: 0.5rem;
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 2.5rem;
+        width: 2.5rem;
         border-radius: 0.5rem;
         transition:
           opacity 0.3s,
@@ -137,12 +169,77 @@
         opacity: 1;
         transform: rotate(90deg);
       }
+
+      .set-switcher {
+        position: relative;
+        display: flex;
+      }
+
+      .set-switcher-toggle {
+        color: var(--text);
+        opacity: 0.8;
+        cursor: pointer;
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        /* matches the gear button's height so the pair sits level */
+        height: 2.5rem;
+        padding: 0 1rem;
+        border-radius: 0.5rem;
+        transition: opacity 0.3s;
+        font-size: 1rem;
+        text-decoration: none;
+      }
+
+      .set-switcher-toggle:hover {
+        opacity: 1;
+      }
+
+      .set-switcher-menu {
+        position: absolute;
+        top: calc(100% + 0.75rem);
+        right: 0;
+        padding: 0.5rem;
+        display: flex;
+        flex-direction: column;
+        min-width: 8rem;
+        /* the panel class's 100% cap would resolve against the 2.5rem
+           switcher row; cap at the viewport instead, minus the strip above */
+        max-height: calc(100vh - 6rem);
+      }
+
+      .set-switcher-menu[hidden] {
+        display: none;
+      }
+
+      .set-switcher-item {
+        color: var(--text);
+        cursor: pointer;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        transition: background-color 0.3s;
+      }
+
+      .set-switcher-item:hover {
+        background-color: var(--text-hover);
+      }
+
+      .set-switcher-item.current {
+        opacity: 0.6;
+      }
     </style>
   </head>
   <body>
-    <a id="settings-link" class="settings-link" title="Options">&#9881;</a>
+    <div class="top-controls panel">
+      <div id="set-switcher" class="set-switcher">
+        <a id="set-switcher-toggle" class="set-switcher-toggle" title="Link set"></a>
+        <div id="set-switcher-menu" class="set-switcher-menu panel" hidden></div>
+      </div>
+      <a id="settings-link" class="settings-link" title="Options">&#9881;</a>
+    </div>
     <section id="link-groups" class="link-groups panel"></section>
     <section id="clock" class="clock panel"><span></span></section>
+    <script src="storage.js"></script>
     <script src="new-tab.js"></script>
   </body>
 </html>
