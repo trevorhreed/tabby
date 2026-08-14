@@ -123,9 +123,16 @@
         top: 1rem;
         right: 1rem;
         color: var(--text);
-        opacity: 0.6;
+        /* Panel background keeps the control legible over busy photos */
+        background: var(--panel-background);
+        opacity: 0.9;
         cursor: pointer;
-        padding: 0.5rem;
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 2.5rem;
+        width: 2.5rem;
         border-radius: 0.5rem;
         transition:
           opacity 0.3s,
@@ -150,14 +157,19 @@
 
       .set-switcher-toggle {
         color: var(--text);
-        opacity: 0.6;
+        /* Panel background keeps the control legible over busy photos */
+        background: var(--panel-background);
+        opacity: 0.9;
         cursor: pointer;
-        padding: 0.5rem;
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        /* matches the gear button's height so the pair sits level */
+        height: 2.5rem;
+        padding: 0 1rem;
         border-radius: 0.5rem;
         transition: opacity 0.3s;
         font-size: 1rem;
-        /* matches the height of the 1.5rem gear glyph next to it */
-        line-height: 1.5rem;
         text-decoration: none;
       }
 
