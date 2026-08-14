@@ -15,6 +15,8 @@ const DEFAULT_SET_NAME = "Default";
 const defaultSettings = {
   showLinks: true,
   showClock: true,
+  twelveHourClock: false,
+  showSeconds: true,
 };
 
 // Default data structure
@@ -88,7 +90,10 @@ async function migrateLegacyData() {
 
 async function loadMeta() {
   const meta = (await syncGet([SYNC_META_KEY]))[SYNC_META_KEY];
-  return meta || migrateLegacyData();
+  if (!meta) return migrateLegacyData();
+  // Backfill settings added after the meta was first written
+  meta.settings = { ...defaultSettings, ...meta.settings };
+  return meta;
 }
 
 async function loadSetGroups(name) {

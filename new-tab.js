@@ -106,18 +106,26 @@ const months = [
   "Dec",
 ];
 
-const getFormattedTime = () => {
+const getFormattedTime = (settings) => {
   const now = new Date();
   const dayOfTheWeek = daysOfTheWeek[now.getDay()];
   const month = months[now.getMonth()];
   const dayOfTheMonth = now.getDate();
-  const hours = now.getHours();
+  let hours = now.getHours();
+  let suffix = "";
+  if (settings.twelveHourClock) {
+    suffix = hours < 12 ? " AM" : " PM";
+    hours = hours % 12 || 12;
+  }
   const minutes = now.getMinutes();
   const seconds = now.getSeconds();
-  const formattedHours = hours < 10 ? `0${hours}` : hours;
+  // 12-hour times are conventionally unpadded
+  const formattedHours =
+    hours < 10 && !settings.twelveHourClock ? `0${hours}` : hours;
   const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
   const formattedSeconds = seconds < 10 ? `0${seconds}` : seconds;
-  return `${dayOfTheWeek} ${month} ${dayOfTheMonth} \u2022 ${formattedHours}:${formattedMinutes}:${formattedSeconds}`;
+  const secondsPart = settings.showSeconds ? `:${formattedSeconds}` : "";
+  return `${dayOfTheWeek} ${month} ${dayOfTheMonth} \u2022 ${formattedHours}:${formattedMinutes}${secondsPart}${suffix}`;
 };
 
 function renderGroups(groups) {
@@ -192,10 +200,10 @@ function initSetSwitcher(setNames, activeSetName) {
   });
 }
 
-function updateClock() {
+function updateClock(settings) {
   const clockSpan = document.querySelector("#clock span");
   if (clockSpan) {
-    clockSpan.textContent = getFormattedTime();
+    clockSpan.textContent = getFormattedTime(settings);
   }
 }
 
@@ -226,8 +234,8 @@ async function init() {
   if (!meta.settings.showClock) {
     clockSection.style.display = "none";
   } else {
-    updateClock();
-    setInterval(updateClock, 100);
+    updateClock(meta.settings);
+    setInterval(() => updateClock(meta.settings), 100);
   }
 
   // Set background image and colors

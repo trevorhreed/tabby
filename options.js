@@ -47,9 +47,18 @@ function showStatus(message, type) {
   }, 3000);
 }
 
+// Maps settings-checkbox element ids to their settings keys
+const SETTING_CHECKBOXES = {
+  "show-links": "showLinks",
+  "show-clock": "showClock",
+  "twelve-hour-clock": "twelveHourClock",
+  "show-seconds": "showSeconds",
+};
+
 function renderSettings() {
-  document.getElementById("show-links").checked = meta.settings.showLinks;
-  document.getElementById("show-clock").checked = meta.settings.showClock;
+  Object.entries(SETTING_CHECKBOXES).forEach(([id, key]) => {
+    document.getElementById(id).checked = meta.settings[key];
+  });
 }
 
 function renderSetTabs() {
@@ -235,11 +244,9 @@ function escapeHtml(text) {
 }
 
 function handleSettingChange(e) {
-  const field = e.target.id;
-  if (field === "show-links") {
-    meta.settings.showLinks = e.target.checked;
-  } else if (field === "show-clock") {
-    meta.settings.showClock = e.target.checked;
+  const key = SETTING_CHECKBOXES[e.target.id];
+  if (key) {
+    meta.settings[key] = e.target.checked;
   }
   flushSave();
 }
@@ -543,12 +550,11 @@ async function init() {
     });
 
     // Event listeners
-    document
-      .getElementById("show-links")
-      .addEventListener("change", handleSettingChange);
-    document
-      .getElementById("show-clock")
-      .addEventListener("change", handleSettingChange);
+    Object.keys(SETTING_CHECKBOXES).forEach((id) => {
+      document
+        .getElementById(id)
+        .addEventListener("change", handleSettingChange);
+    });
 
     document.addEventListener("input", (e) => {
       if (
