@@ -59,19 +59,39 @@ function renderSettings() {
 }
 
 function renderSetControls() {
-  const editingSelect = document.getElementById("editing-set-select");
   const activeSelect = document.getElementById("active-set-select");
-  [editingSelect, activeSelect].forEach((select) => {
-    select.innerHTML = "";
-    meta.setNames.forEach((name) => {
-      const option = document.createElement("option");
-      option.value = name;
-      option.textContent = name;
-      select.appendChild(option);
-    });
+  activeSelect.innerHTML = "";
+  meta.setNames.forEach((name) => {
+    const option = document.createElement("option");
+    option.value = name;
+    option.textContent = name;
+    activeSelect.appendChild(option);
   });
-  editingSelect.value = editingSetName;
   activeSelect.value = activeSetName;
+  renderSetTabs();
+}
+
+function renderSetTabs() {
+  const tabs = document.getElementById("set-tabs");
+  tabs.innerHTML = "";
+  meta.setNames.forEach((name) => {
+    const tab = document.createElement("button");
+    tab.className = "set-tab" + (name === editingSetName ? " active" : "");
+    tab.textContent = name;
+    tab.addEventListener("click", () => {
+      if (name !== editingSetName) {
+        switchEditingSet(name);
+      }
+    });
+    tabs.appendChild(tab);
+  });
+  // The trailing tab always creates a new set; handleButtonClick picks it
+  // up through its data-action like the other set buttons
+  const newTab = document.createElement("button");
+  newTab.className = "set-tab new-set-tab";
+  newTab.dataset.action = "new-set";
+  newTab.textContent = "+ New";
+  tabs.appendChild(newTab);
 }
 
 // allowName lets a rename keep its current name without a duplicate error
@@ -95,7 +115,6 @@ async function switchEditingSet(name) {
     hasUnsavedGroupChanges() &&
     !confirm("Discard unsaved changes to the current set?")
   ) {
-    document.getElementById("editing-set-select").value = editingSetName;
     return;
   }
   editingSetName = name;
@@ -282,6 +301,9 @@ function handleButtonClick(e) {
       syncSet({ [SYNC_META_KEY]: meta, [setKey(name)]: { groups: [] } })
         .then(() => {
           markMetaSaved();
+          // Show the new tab even if the switch is declined below (it
+          // prompts when the current set has unsaved edits)
+          renderSetControls();
           switchEditingSet(name);
           showStatus(`Set "${name}" created`, "success");
         })
@@ -507,10 +529,6 @@ async function init() {
     document
       .getElementById("show-clock")
       .addEventListener("change", handleSettingChange);
-
-    document
-      .getElementById("editing-set-select")
-      .addEventListener("change", (e) => switchEditingSet(e.target.value));
 
     // Active set is a per-device choice, so it writes straight to
     // chrome.storage.local instead of going through the save flow

@@ -356,6 +356,46 @@
         min-width: 150px;
       }
 
+      .set-tabs {
+        display: flex;
+        gap: 4px;
+        flex-wrap: wrap;
+        border-bottom: 2px solid var(--secondary-color);
+        margin-bottom: 20px;
+      }
+
+      .set-tab {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px 5px 0 0;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.3s;
+        background-color: var(--secondary-color);
+        color: var(--text-color);
+      }
+
+      .set-tab:hover {
+        background-color: var(--border-color);
+      }
+
+      .set-tab.active {
+        background-color: var(--primary-color);
+        color: white;
+      }
+
+      .set-tab.new-set-tab {
+        background: none;
+        border: 1px dashed var(--border-color);
+        border-bottom: none;
+        color: var(--text-muted);
+      }
+
+      .set-tab.new-set-tab:hover {
+        color: var(--primary-color);
+        border-color: var(--primary-color);
+      }
+
       .import-export h3 {
         margin-top: 0;
       }
@@ -421,25 +461,6 @@
             synced</small
           >
         </div>
-        <div class="setting-item">
-          <label for="editing-set-select">Editing</label>
-          <select id="editing-set-select"></select>
-          <button class="btn btn-primary btn-small" data-action="new-set">
-            New
-          </button>
-          <button class="btn btn-primary btn-small" data-action="rename-set">
-            Rename
-          </button>
-          <button
-            class="btn btn-primary btn-small"
-            data-action="duplicate-set"
-          >
-            Duplicate
-          </button>
-          <button class="btn btn-danger btn-small" data-action="delete-set">
-            Delete
-          </button>
-        </div>
       </div>
 
       <h2
@@ -452,11 +473,26 @@
         Link Groups
       </h2>
 
+      <div id="set-tabs" class="set-tabs"></div>
+
       <div class="actions">
         <button class="btn btn-primary" data-action="add-group">
           Add Group
         </button>
         <button class="btn btn-danger" data-action="clear-groups">Clear</button>
+        <button
+          class="btn btn-primary btn-small"
+          data-action="rename-set"
+          style="margin-left: auto"
+        >
+          Rename Set
+        </button>
+        <button class="btn btn-primary btn-small" data-action="duplicate-set">
+          Duplicate Set
+        </button>
+        <button class="btn btn-danger btn-small" data-action="delete-set">
+          Delete Set
+        </button>
       </div>
 
       <div id="groups-container"></div>
