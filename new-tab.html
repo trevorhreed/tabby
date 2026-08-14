@@ -203,6 +203,9 @@
         display: flex;
         flex-direction: column;
         min-width: 8rem;
+        /* the panel class's 100% cap would resolve against the 2.5rem
+           switcher row; cap at the viewport instead, minus the strip above */
+        max-height: calc(100vh - 6rem);
       }
 
       .set-switcher-menu[hidden] {
