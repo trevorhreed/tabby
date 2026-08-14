@@ -134,6 +134,9 @@ async function switchEditingSet(name) {
   }
   editingSetName = name;
   editingGroups = await loadSetGroups(name);
+  // The selected tab also becomes the set this device's new tab shows
+  activeSetName = name;
+  await setActiveSetName(name);
   renderSetTabs();
   renderGroups();
 }
