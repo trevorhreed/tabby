@@ -246,7 +246,6 @@ function renderGroups() {
     const groupDiv = document.createElement("div");
     groupDiv.className = "group";
     groupDiv.dataset.groupIndex = groupIndex;
-    groupDiv.draggable = true;
     groupDiv.innerHTML = `
       <div class="group-header">
         <span class="drag-handle">&#9776;</span>
@@ -272,7 +271,6 @@ function renderGroups() {
       linkDiv.className = "link";
       linkDiv.dataset.groupIndex = groupIndex;
       linkDiv.dataset.linkIndex = linkIndex;
-      linkDiv.draggable = true;
       linkDiv.innerHTML = `
         <span class="drag-handle">&#9776;</span>
         <input type="text" value="${escapeHtml(link.label)}" placeholder="Link name" data-group="${groupIndex}" data-link="${linkIndex}" data-field="label">
@@ -699,16 +697,19 @@ function setupDragAndDrop() {
 
   const container = document.getElementById("groups-container");
 
-  // Prevent drag on inputs/buttons
+  // Drag only via the handles: an item becomes draggable on handle mousedown,
+  // so text selection in inputs never starts a drag
   container.addEventListener("mousedown", (e) => {
-    const tag = e.target.tagName.toLowerCase();
-    if (tag === "input" || tag === "button" || tag === "label") {
-      const draggable = e.target.closest('[draggable="true"]');
-      if (draggable) {
-        draggable.draggable = false;
-        setTimeout(() => (draggable.draggable = true), 0);
-      }
-    }
+    if (!e.target.closest(".drag-handle")) return;
+    const item = e.target.closest(".link, .group");
+    if (item) item.draggable = true;
+  });
+
+  // Mousedown on a handle without a drag leaves draggable set — clear it
+  document.addEventListener("mouseup", () => {
+    container
+      .querySelectorAll('[draggable="true"]')
+      .forEach((el) => (el.draggable = false));
   });
 
   container.addEventListener("dragstart", (e) => {
@@ -734,7 +735,8 @@ function setupDragAndDrop() {
     }
   });
 
-  container.addEventListener("dragend", () => {
+  container.addEventListener("dragend", (e) => {
+    e.target.draggable = false;
     document
       .querySelectorAll(".dragging")
       .forEach((el) => el.classList.remove("dragging"));
