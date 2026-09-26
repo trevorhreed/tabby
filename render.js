@@ -3,6 +3,9 @@
 
 const MAX_IMAGE_INDEX = 64;
 const MAX_CHRISTMAS_INDEX = 50;
+// The tint only needs the average color, and averaging a small scaled-down
+// copy lands within a fraction of a shade of averaging every full-res pixel.
+const COLOR_SAMPLE_SIZE = 64;
 
 const getSeason = () => {
   const now = new Date();
@@ -66,8 +69,7 @@ const darkenColor = ({ red, green, blue }, factor) => ({
   blue: Math.max(0, Math.round(blue * (1 - factor))),
 });
 
-// Average color of every pixel in the photo; applyLook turns it into the
-// panel palette.
+// Average color of the photo; applyLook turns it into the panel palette.
 const averageImageColor = (imageUrl) => {
   return new Promise((resolve) => {
     const img = new Image();
@@ -75,9 +77,10 @@ const averageImageColor = (imageUrl) => {
     img.onload = () => {
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
-      canvas.width = img.width;
-      canvas.height = img.height;
-      ctx.drawImage(img, 0, 0);
+      canvas.width = COLOR_SAMPLE_SIZE;
+      canvas.height = COLOR_SAMPLE_SIZE;
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const data = imageData.data;
       const color = { red: 0, green: 0, blue: 0 };
