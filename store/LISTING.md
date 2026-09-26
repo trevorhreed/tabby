@@ -3,44 +3,46 @@
 ID: ohdgighchcjhbbefopcoljmjaaodngcn
 
 ## Short Description (132 characters max)
-A beautiful new tab page with seasonal backgrounds, customizable link groups, and cloud sync. Make every new tab a joy.
+Your new tab is a blank page. Tabby swaps it for a seasonal photo and the links you actually use. No ads, no tracking, no sign-up.
 
 ## Detailed Description
 
-**Tabby** transforms your new tab into a beautiful, personalized dashboard.
+**You open a new tab dozens of times a day. It could look a lot better than a search box you never use.**
 
-🌸 **Seasonal Backgrounds**
-Enjoy stunning photography that changes with the seasons. Backgrounds transition gradually between seasons—in February you'll mostly see winter scenes with occasional hints of spring, and by March it's the opposite. This natural blending means your new tab evolves throughout the year, mirroring the changing world outside your window.
+Tabby fills it with a full-screen photo and the links you actually click. That's the whole idea, and it does it well.
 
-🔗 **Customizable Link Groups**
-Organize your favorite sites into groups. Create categories for work, entertainment, social media, or anything else. Drag and drop to reorder. Hide links or entire groups as needed.
+(Despite the name, Tabby is not a cat. It does share one cat skill: sitting in the same spot all day, looking nice.)
 
-☁️ **Synced Across Devices**
-Your links and settings automatically sync across all your Chrome browsers using your Google account. Set up once, access everywhere.
+🍂 **Seasons that blend**
+The photos follow the calendar, and the seasons fade into each other. Late winter sneaks in the odd spring morning, and late summer starts leaking autumn. In December, holiday scenes turn up more and more often until Christmas Day, when Tabby goes fully festive. It's like a window you never have to clean.
 
-⏰ **Optional Clock Display**
-A subtle clock in the corner keeps you aware of the time without being intrusive. Toggle it on or off in settings.
+🔗 **Your links, right where you're already looking**
+Group your sites however your brain works: Work, Reading, Stuff I Swear I Don't Check Hourly. Drag to reorder. Hide what you don't need today without deleting it.
 
-🎨 **Clean, Minimal Design**
-No clutter, no ads, no distractions. Just your links and a beautiful background with colors that adapt to each image.
+💼 **Work links at work, home links at home**
+Make separate link sets and choose which one each computer shows. Your work laptop never has to find out about your fantasy football league. Every set syncs, and each device remembers which set it shows.
 
-🌙 **Dark Mode Support**
-The options page automatically matches your system theme for comfortable configuration any time of day.
+⏰ **A clock that minds its own business**
+Show the date, the time, both, or neither. Pick a 12- or 24-hour clock. Turn on seconds if you like watching time pass.
 
-**Privacy First**
-Tabby stores your data in Chrome's sync storage. No external servers, no tracking, no accounts required beyond your Google account for sync.
+🔍 **Any screen size**
+Scale the links and the clock separately, from 25% to 800%. Yes, 800%, for the wall-mounted-monitor crowd.
+
+📋 **Take your links with you**
+Export a link set to your clipboard or to a file, and import it by pasting or uploading. It's handy for backups, new computers, and sharing your carefully curated setup with a coworker who didn't ask.
+
+☁️ **Syncs through Chrome, no new account**
+If you're signed in to Chrome, you're already set up. Your links and settings follow you to every browser where you use it.
+
+🔒 **Nothing to see here, in a good way**
+No ads, tracking, analytics, or servers. Tabby has nowhere to send your data even if it wanted to, and it doesn't.
 
 ---
 
-**Getting Started**
-1. Install Tabby
-2. Open a new tab to see it in action
-3. Click the gear icon to customize your links
-4. Enjoy!
-
----
-
-Made with ❤️ for people who appreciate a beautiful browser experience.
+**Getting started**
+1. Add to Chrome.
+2. Open a new tab and take a moment to admire it.
+3. Click the gear to add your links.
 
 ## Category
 Productivity
@@ -54,15 +56,17 @@ English
 - dashboard
 - links
 - bookmarks
+- link sets
 - seasonal
 - backgrounds
 - wallpaper
+- clock
 - productivity
 - minimal
 - customizable
 
 ## Privacy Statement
-This extension stores your settings and links locally and syncs them to your Chrome account via Chrome's built-in sync storage. No data is collected, shared, or sent to any external servers. No analytics or tracking of any kind.
+Tabby stores your links and settings in Chrome's built-in storage. Links and settings sync to your Chrome account through Chrome sync storage; the choice of which link set a device shows is kept in local storage on that device and is never synced. No data is collected, shared, or sent to any external server, and there is no analytics or tracking of any kind.
 
 ## Storage Permission Justification
-This extension uses the "storage" permission to save user preferences (show/hide clock, show/hide links) and custom link groups using Chrome's sync storage API. This allows users' settings to persist across browser sessions and sync across their devices. No data is sent to external servers—all data stays within Chrome's built-in storage system.
+Tabby uses the "storage" permission to save your link sets and display settings (date and time visibility, clock format, link and clock scale) in Chrome's sync storage, so they persist between sessions and sync across your devices. It also uses local storage to remember which link set each device shows. No data is sent to external servers; everything stays in Chrome's built-in storage.
