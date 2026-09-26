@@ -5,17 +5,8 @@
     <title>Tabby</title>
     <link rel="icon" type="image/png" sizes="32x32" href="icons/icon48.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="icons/icon16.png" />
+    <link rel="stylesheet" href="panels.css" />
     <style>
-      :root {
-        /* --image: url('RANDOMLY GENERATED'); */
-        --background: #3338;
-        --text: #ccc;
-        --text-hover: #ccc3;
-        --panel-background: #000c;
-        --font-size: 20px;
-        --links-scale: 1;
-        --clock-scale: 1;
-      }
       html,
       body {
         box-sizing: border-box;
@@ -25,112 +16,6 @@
         margin: 0;
         padding: 0;
         overflow: hidden;
-      }
-
-      body {
-        background: var(--background);
-        background-image: var(--image);
-        background-position: center;
-        background-repeat: no-repeat;
-        background-size: cover;
-        color: var(--text);
-      }
-
-      a.link {
-        display: inline-block;
-        color: var(--text);
-        text-decoration: none;
-        padding: 0.5rem 1rem 0.5rem;
-        border-radius: 0.5rem;
-        transition:
-          background-color 0.3s,
-          color 0.3s;
-
-        &:hover {
-          color: var(--text-hover);
-          background-color: var(--text-hover);
-        }
-      }
-
-      .panel {
-        background: var(--panel-background);
-        /* box-shadow: 0 0 1em #000; */
-        border-radius: 1em;
-        padding: 1rem;
-        max-height: 100%;
-        overflow: auto;
-      }
-
-      .link-groups {
-        display: inline-block;
-        /* zoom (not transform) so layout and scrolling scale with it */
-        zoom: var(--links-scale);
-        overflow: auto;
-        /* never extend past the viewport; scroll instead */
-        max-height: 100%;
-        max-width: 100%;
-        box-sizing: border-box;
-        /* stack above the fixed clock when they overlap */
-        position: relative;
-        z-index: 2;
-        border-top-left-radius: 0;
-        border-top-right-radius: 0;
-        border-bottom-left-radius: 0;
-
-        & .group {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-start;
-          margin: 0 0 1.8rem;
-
-          & label {
-            opacity: 0.6;
-            display: inline;
-            padding: 0.5rem 1rem;
-            color: var(--text);
-            border-top-left-radius: 0.5rem;
-            border-top-right-radius: 0.5rem;
-          }
-
-          & .links {
-            display: flex;
-            flex-direction: row;
-            gap: 0.5rem;
-            border-top-right-radius: 0.5rem;
-            border-bottom-left-radius: 0.5rem;
-            border-bottom-right-radius: 0.5rem;
-
-            & a {
-              display: inline-block;
-              color: var(--text);
-              text-decoration: none;
-              cursor: pointer;
-            }
-          }
-
-          &:last-child {
-            margin: 0 0 0.5rem;
-          }
-        }
-      }
-
-      .clock {
-        position: fixed;
-        bottom: 0rem;
-        right: 0rem;
-        zoom: var(--clock-scale);
-        /* em, so it tracks the clock's own font size; tighter than the
-           default panel padding */
-        padding: 0.5em 0.75em;
-        z-index: 1;
-        border-top-right-radius: 0;
-        border-bottom-left-radius: 0;
-        border-bottom-right-radius: 0;
-
-        & span {
-          /* same base size as the links; the clock-scale setting adjusts it */
-          font-size: 1rem;
-        }
       }
 
       /* Shared panel strip keeps the controls legible over busy photos */
@@ -240,6 +125,7 @@
     <section id="link-groups" class="link-groups panel"></section>
     <section id="clock" class="clock panel"><span></span></section>
     <script src="storage.js"></script>
+    <script src="render.js"></script>
     <script src="new-tab.js"></script>
   </body>
 </html>
