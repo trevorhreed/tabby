@@ -17,7 +17,7 @@ Tabby fills it with a full-screen photo and the links you actually click. That's
 The photos follow the calendar, and the seasons fade into each other. Late winter sneaks in the odd spring morning, and late summer starts leaking autumn. In December, holiday scenes turn up more and more often until Christmas Day, when Tabby goes fully festive. It's like a window you never have to clean.
 
 🔗 **Your links, right where you're already looking**
-Group your sites however your brain works: Work, Reading, Stuff I Swear I Don't Check Hourly. Drag to reorder. Hide what you don't need today without deleting it.
+Group your sites however your brain works: Work, Reading, Stuff I Swear I Don't Check Hourly. Drag to reorder. Hide what you don't need today without deleting it. The link and clock panels take on a faint tint from each photo, so they look like part of the picture instead of stickers slapped on top.
 
 💼 **Work links at work, home links at home**
 Make separate link sets and choose which one each computer shows. Your work laptop never has to find out about your fantasy football league. Every set syncs, and each device remembers which set it shows.
