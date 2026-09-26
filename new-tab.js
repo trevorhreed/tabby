@@ -15,7 +15,7 @@ function initSetSwitcher(setNames, activeSetName) {
         if (name === currentName) return;
         await setActiveSetName(name);
         toggle.textContent = name;
-        renderGroups(await loadSetGroups(name));
+        renderLinkGroups(await loadSetGroups(name));
         renderMenu(name);
       });
       menu.appendChild(item);
@@ -54,7 +54,7 @@ async function init() {
     setSwitcher.style.display = "none";
   } else {
     const activeSetName = await getActiveSetName(meta.setNames);
-    renderGroups(await loadSetGroups(activeSetName));
+    renderLinkGroups(await loadSetGroups(activeSetName));
     initSetSwitcher(meta.setNames, activeSetName);
   }
 
@@ -68,7 +68,9 @@ async function init() {
   }
 
   // Set background image and colors
-  await showBackground(getBackgroundImage());
+  const look = meta.settings.look;
+  const rgb = await showBackground(getBackgroundImage(), look);
+  systemDark.addEventListener("change", () => applyLook(look, rgb));
 }
 
 document.addEventListener("DOMContentLoaded", init);

@@ -54,7 +54,7 @@ const darkenColor = ({ red, green, blue }, factor) => ({
   blue: Math.max(0, Math.round(blue * (1 - factor))),
 });
 
-// Average color of every pixel in the photo; tintColors turns it into the
+// Average color of every pixel in the photo; applyLook turns it into the
 // panel palette.
 const averageImageColor = (imageUrl) => {
   return new Promise((resolve) => {
@@ -86,11 +86,6 @@ const averageImageColor = (imageUrl) => {
   });
 };
 
-const tintColors = (rgb) => ({
-  light: rgbToHex(lightenColor(rgb, 0.4)),
-  dark: rgbToHex(darkenColor(rgb, 0.6)),
-});
-
 // Average colors generated at publish time (scripts/build-tints.sh), keyed by
 // image path. Absent in an unpacked dev checkout, where every photo falls
 // back to averaging at runtime.
@@ -103,10 +98,6 @@ const loadPrecomputedTints = async () => {
       .catch(() => ({}));
   }
   return precomputedTints;
-};
-
-const setTextColor = (color, property) => {
-  document.documentElement.style.setProperty(property, color);
 };
 
 const daysOfTheWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -152,7 +143,7 @@ const getFormattedTime = (settings) => {
   return settings.showDate ? datePart : timePart;
 };
 
-function renderGroups(groups) {
+function renderLinkGroups(groups) {
   const container = document.getElementById("link-groups");
   container.innerHTML = "";
 
@@ -201,14 +192,143 @@ function applyScales(settings) {
   document.documentElement.style.setProperty("--clock-scale", settings.clockScale);
 }
 
-async function showBackground(imageUrl) {
+// Shows the photo with the panels styled to match; resolves to the photo's
+// average color so callers can re-apply the look without re-averaging
+async function showBackground(imageUrl, look) {
   const known = (await loadPrecomputedTints())[imageUrl];
   // Without a precomputed tint, show the photo while it's averaged; with
   // one, tint and photo land together so the panels never flash the
   // default colors
   if (!known) setBackgroundImage(imageUrl);
-  const color = tintColors(known ?? (await averageImageColor(imageUrl)));
-  setTextColor(color.light, "--text");
-  setTextColor(color.dark + "dd", "--panel-background");
+  const rgb = known ?? (await averageImageColor(imageUrl));
+  applyLook(look, rgb);
   setBackgroundImage(imageUrl);
+  return rgb;
 }
+
+// Look settings: how the panels sit over the photo. tone runs from -90
+// (toward black) through 0 (the photo's average) to +90 (toward white);
+// null means the style's default, which keeps Auto and System readable on
+// both bright and dark photos. corners is in em, so it scales with the panel.
+const LOOK_STYLES = ["auto", "dark", "light", "system"];
+const LOOK_EDGES = ["none", "line", "rim", "rim-line"];
+const LOOK_LAYOUTS = ["corners", "center", "dock", "sidebar"];
+const LOOK_PRESETS = [
+  { name: "Clear glass", style: "auto", blur: 6, edge: "line", tone: null, corners: 0.75 },
+  { name: "Frosted", style: "auto", blur: 12, edge: "rim-line", tone: null, corners: 1 },
+  { name: "Heavy frost", style: "auto", blur: 24, edge: "rim", tone: null, corners: 1 },
+  { name: "Smoked", style: "dark", blur: 12, edge: "none", tone: -65, corners: 0.75 },
+  { name: "Tinted", style: "dark", blur: 18, edge: "rim-line", tone: -30, corners: 1.5 },
+  { name: "Milk glass", style: "light", blur: 18, edge: "line", tone: 70, corners: 1 },
+  { name: "Square", style: "auto", blur: 6, edge: "none", tone: null, corners: 0 },
+  { name: "Pill", style: "auto", blur: 12, edge: "line", tone: null, corners: 2 },
+  { name: "Follow system", style: "system", blur: 12, edge: "rim-line", tone: null, corners: 1 },
+];
+// Relative luminance above this means the photo is bright enough that a
+// light panel with dark text reads better than the usual dark panel
+const LIGHT_PANEL_THRESHOLD = 0.45;
+const DEFAULT_TONE = { dark: -50, light: 60 };
+const PANEL_ALPHA = "aa";
+const LINE_STRENGTH = "45%";
+const RIM_WIDTH_PX = 8;
+// The rim's blur stacks on the panel's; with no panel blur it needs its own
+const MIN_RIM_BLUR_PX = 12;
+
+const systemDark = window.matchMedia("(prefers-color-scheme: dark)");
+
+const toLinear = (value) => {
+  const v = value / 255;
+  return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+};
+
+const luminanceOf = ({ red, green, blue }) =>
+  0.2126 * toLinear(red) + 0.7152 * toLinear(green) + 0.0722 * toLinear(blue);
+
+// Light or dark panel for this photo under the given style
+function resolveLookStyle(style, rgb) {
+  if (style === "light" || style === "dark") return style;
+  if (style === "system") return systemDark.matches ? "dark" : "light";
+  return luminanceOf(rgb) > LIGHT_PANEL_THRESHOLD ? "light" : "dark";
+}
+
+function applyLook(look, rgb) {
+  const resolved = resolveLookStyle(look.style, rgb);
+  const tone = look.tone ?? DEFAULT_TONE[resolved];
+  const amount = Math.abs(tone) / 100;
+  const panel = tone >= 0 ? lightenColor(rgb, amount) : darkenColor(rgb, amount);
+  const text = resolved === "light" ? darkenColor(rgb, 0.7) : lightenColor(rgb, 0.4);
+  const root = document.documentElement.style;
+  root.setProperty("--panel-background", rgbToHex(panel) + PANEL_ALPHA);
+  root.setProperty("--text", rgbToHex(text));
+  root.setProperty("--panel-blur", `${look.blur}px`);
+  root.setProperty("--panel-radius", `${look.corners}em`);
+  root.setProperty(
+    "--panel-line",
+    look.edge.endsWith("line")
+      ? `inset 0 0 0 1.5px color-mix(in srgb, var(--text) ${LINE_STRENGTH}, transparent)`
+      : "none",
+  );
+  document.body.dataset.layout = look.layout;
+  setRims(look.edge.startsWith("rim") ? Math.max(MIN_RIM_BLUR_PX, look.blur * 2) : 0);
+}
+
+// Builds an SVG path for a rectangle with per-corner radii
+function roundedRectPath(x, y, w, h, [tl, tr, br, bl]) {
+  return (
+    `M${x + tl},${y} H${x + w - tr} A${tr},${tr} 0 0 1 ${x + w},${y + tr} ` +
+    `V${y + h - br} A${br},${br} 0 0 1 ${x + w - br},${y + h} ` +
+    `H${x + bl} A${bl},${bl} 0 0 1 ${x},${y + h - bl} V${y + tl} A${tl},${tl} 0 0 1 ${x + tl},${y} Z`
+  );
+}
+
+// A mask would stop backdrop-filter from blurring, so each rim is a separate
+// fixed element cut to a ring with an evenodd clip-path, tracking its panel's
+// box and corner radii. Panels themselves can't hold the rim: an element with
+// backdrop-filter hides the photo from its children's backdrop.
+const rims = new Map();
+let rimBlurPx = 0;
+
+function placeRim(panel, rim) {
+  const box = panel.getBoundingClientRect();
+  const style = getComputedStyle(panel);
+  const visible = rimBlurPx > 0 && box.width > 0 && style.display !== "none";
+  rim.style.display = visible ? "block" : "none";
+  if (!visible) return;
+  // Radii are in the panel's zoomed coordinates; the box is in the page's
+  const zoom = box.width / panel.offsetWidth || 1;
+  const radii = [
+    style.borderTopLeftRadius,
+    style.borderTopRightRadius,
+    style.borderBottomRightRadius,
+    style.borderBottomLeftRadius,
+  ].map((r) => Math.min(parseFloat(r) * zoom, box.width / 2, box.height / 2));
+  const inner = radii.map((r) => Math.max(0, r - RIM_WIDTH_PX));
+  const w = RIM_WIDTH_PX;
+  Object.assign(rim.style, {
+    left: `${box.left}px`,
+    top: `${box.top}px`,
+    width: `${box.width}px`,
+    height: `${box.height}px`,
+    background: `color-mix(in srgb, ${style.backgroundColor} 40%, transparent)`,
+    backdropFilter: `blur(${rimBlurPx}px)`,
+    clipPath: `path(evenodd, "${roundedRectPath(0, 0, box.width, box.height, radii)} ${roundedRectPath(w, w, box.width - 2 * w, box.height - 2 * w, inner)}")`,
+  });
+}
+
+const placeAllRims = () => rims.forEach((rim, panel) => placeRim(panel, rim));
+const rimObserver = new ResizeObserver(placeAllRims);
+
+function setRims(blurPx) {
+  rimBlurPx = blurPx;
+  document.querySelectorAll(".panel").forEach((panel) => {
+    if (rims.has(panel) || panel.closest(".set-switcher-menu")) return;
+    const rim = document.createElement("div");
+    rim.className = "panel-rim";
+    document.body.appendChild(rim);
+    rims.set(panel, rim);
+    rimObserver.observe(panel);
+  });
+  // Layout changes move panels without resizing them, so re-place next frame
+  requestAnimationFrame(placeAllRims);
+}
+window.addEventListener("resize", placeAllRims);

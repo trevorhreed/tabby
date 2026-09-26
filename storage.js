@@ -21,6 +21,15 @@ const defaultSettings = {
   // Independent size multipliers for the two new-tab panels
   linksScale: 1,
   clockScale: 1,
+  // Panel look; the Frosted preset (see LOOK_PRESETS in render.js)
+  look: {
+    layout: "corners",
+    style: "auto",
+    blur: 12,
+    edge: "rim-line",
+    tone: null,
+    corners: 1,
+  },
 };
 
 // Default data structure
@@ -75,8 +84,13 @@ const setKey = (name) => SYNC_SET_PREFIX + name;
 let usingUnsavedDefaults = false;
 
 const backfillSettings = (meta) => {
-  // Backfill settings added after the meta was first written
-  meta.settings = { ...defaultSettings, ...meta.settings };
+  // Backfill settings added after the meta was first written; look is merged
+  // a level deeper so newly added look fields get defaults too
+  meta.settings = {
+    ...defaultSettings,
+    ...meta.settings,
+    look: { ...defaultSettings.look, ...meta.settings?.look },
+  };
   return meta;
 };
 
@@ -93,25 +107,22 @@ async function migrateLegacyData() {
     // Nothing to migrate: fresh install, or sync hasn't delivered this
     // device's data yet. Show defaults in memory; write nothing.
     usingUnsavedDefaults = true;
-    return {
-      settings: { ...defaultSettings },
-      setNames: [DEFAULT_SET_NAME],
-    };
+    return backfillSettings({ setNames: [DEFAULT_SET_NAME] });
   }
-  let settings = { ...defaultSettings };
+  let settings = {};
   let groups;
   // Handle old array format
   if (Array.isArray(legacy)) {
     groups = legacy;
   } else {
-    settings = { ...defaultSettings, ...legacy.settings };
+    settings = legacy.settings || {};
     groups = legacy.groups || [];
   }
   // Re-check meta right before writing: another page may have finished the
   // same migration while we were reading. Its output is identical — use it.
   const existing = (await syncGet([SYNC_META_KEY]))[SYNC_META_KEY];
   if (existing) return backfillSettings(existing);
-  const meta = { settings, setNames: [DEFAULT_SET_NAME] };
+  const meta = backfillSettings({ settings, setNames: [DEFAULT_SET_NAME] });
   await syncSet({
     [SYNC_META_KEY]: meta,
     [setKey(DEFAULT_SET_NAME)]: { groups },
