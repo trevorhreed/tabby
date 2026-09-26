@@ -40,6 +40,17 @@ a.link {
   }
 }
 
+a.link .favicon {
+  width: 1em;
+  height: 1em;
+  margin-right: 0.45em;
+  vertical-align: -0.15em;
+}
+
+body.no-favicons a.link .favicon {
+  display: none;
+}
+
 .panel {
   background: var(--panel-background);
   /* box-shadow: 0 0 1em #000; */

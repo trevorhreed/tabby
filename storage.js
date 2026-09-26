@@ -17,6 +17,7 @@ const defaultSettings = {
   showDate: true,
   showTime: true,
   twelveHourClock: true,
+  showFavicons: true,
   showSeconds: true,
   // Independent size multipliers for the two new-tab panels
   linksScale: 1,
