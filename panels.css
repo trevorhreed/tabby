@@ -128,9 +128,14 @@ body.no-favicons a.link .favicon {
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
 
-  & span {
+  & > span {
     /* same base size as the links; the clock-scale setting adjusts it */
     font-size: 1rem;
+  }
+
+  /* Inline style: date and time on one line with a bullet between */
+  & .clock-date + .clock-time::before {
+    content: " \2022  ";
   }
 }
 
@@ -175,7 +180,7 @@ body[data-layout="dock"] {
     transform: translate(-50%, -50%);
     border-radius: var(--panel-radius);
 
-    & span {
+    & > span {
       font-size: 3rem;
       white-space: nowrap;
     }
@@ -217,5 +222,45 @@ body[data-layout="sidebar"] {
   & .link-groups {
     display: block;
     border-radius: 0 0 var(--panel-radius) 0;
+  }
+}
+
+/* Lock-screen clock for the layouts where it heads a column: the date on
+   its own line above a large, light time */
+body[data-layout="center"],
+body[data-layout="sidebar"] {
+  & .clock {
+    padding: 1.25rem 1.5rem 1rem;
+    text-align: center;
+
+    & > span {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+  }
+
+  & .clock-date {
+    font-size: 1.1rem;
+    font-weight: 500;
+    opacity: 0.85;
+  }
+
+  & .clock-time {
+    font-size: 4.5rem;
+    font-weight: 200;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  & .clock-date + .clock-time::before {
+    content: none;
+  }
+
+  & .clock-suffix {
+    font-size: 0.3em;
+    font-weight: 500;
+    letter-spacing: 0.05em;
   }
 }

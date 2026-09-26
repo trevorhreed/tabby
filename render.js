@@ -131,7 +131,18 @@ const months = [
   "Dec",
 ];
 
-const getFormattedTime = (settings) => {
+const LONG_DATE = new Intl.DateTimeFormat(undefined, {
+  weekday: "long",
+  month: "long",
+  day: "numeric",
+});
+// Layouts where the clock heads a column show it lock-screen style: the date
+// on its own line above a large time
+const STACKED_CLOCK_LAYOUTS = ["center", "sidebar"];
+
+// The clock's date and time as separate strings; the stacked style gets the
+// spelled-out date, the inline style the short one
+const getClockParts = (settings, stacked) => {
   const now = new Date();
   const dayOfTheWeek = daysOfTheWeek[now.getDay()];
   const month = months[now.getMonth()];
@@ -139,7 +150,7 @@ const getFormattedTime = (settings) => {
   let hours = now.getHours();
   let suffix = "";
   if (settings.twelveHourClock) {
-    suffix = hours < 12 ? " AM" : " PM";
+    suffix = hours < 12 ? "AM" : "PM";
     hours = hours % 12 || 12;
   }
   const minutes = now.getMinutes();
@@ -150,12 +161,11 @@ const getFormattedTime = (settings) => {
   const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
   const formattedSeconds = seconds < 10 ? `0${seconds}` : seconds;
   const secondsPart = settings.showSeconds ? `:${formattedSeconds}` : "";
-  const datePart = `${dayOfTheWeek} ${month} ${dayOfTheMonth}`;
-  const timePart = `${formattedHours}:${formattedMinutes}${secondsPart}${suffix}`;
-  if (settings.showDate && settings.showTime) {
-    return `${datePart} \u2022 ${timePart}`;
-  }
-  return settings.showDate ? datePart : timePart;
+  return {
+    date: stacked ? LONG_DATE.format(now) : `${dayOfTheWeek} ${month} ${dayOfTheMonth}`,
+    time: `${formattedHours}:${formattedMinutes}${secondsPart}`,
+    suffix,
+  };
 };
 
 // Chrome's cached icon for a page, via the favicon permission. Sites never
@@ -215,10 +225,19 @@ function renderLinkGroups(groups) {
 }
 
 function updateClock(settings) {
-  const clockSpan = document.querySelector("#clock span");
-  if (clockSpan) {
-    clockSpan.textContent = getFormattedTime(settings);
+  const clockSpan = document.querySelector("#clock > span");
+  if (!clockSpan) return;
+  const stacked = STACKED_CLOCK_LAYOUTS.includes(settings.look.layout);
+  const { date, time, suffix } = getClockParts(settings, stacked);
+  const parts = [];
+  if (settings.showDate) parts.push(`<span class="clock-date">${date}</span>`);
+  if (settings.showTime) {
+    const suffixPart = suffix ? ` <span class="clock-suffix">${suffix}</span>` : "";
+    parts.push(`<span class="clock-time">${time}${suffixPart}</span>`);
   }
+  const html = parts.join("");
+  // Runs every 100ms; only touch the DOM when the text actually changes
+  if (clockSpan.innerHTML !== html) clockSpan.innerHTML = html;
 }
 
 // Each panel zooms independently off its own multiplier
