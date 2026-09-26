@@ -4,7 +4,6 @@ name: Check wallpaper tints
 # could break it instead of finding out on release.
 on:
   pull_request:
-    branches: [release]
     paths:
       - "images/**"
       - "scripts/**"
