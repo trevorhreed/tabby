@@ -26,6 +26,7 @@ function cancelPendingSave() {
 
 function flushSave() {
   cancelPendingSave();
+  sendPreview();
   return saveAll().catch((err) => {
     showStatus("Error saving changes", "error");
     console.error(err);
@@ -33,18 +34,38 @@ function flushSave() {
 }
 
 function scheduleSave() {
+  sendPreview();
   clearTimeout(saveTimer);
   saveTimer = setTimeout(flushSave, SAVE_DEBOUNCE_MS);
 }
 
-function showStatus(message, type) {
-  const status = document.getElementById("status");
-  status.textContent = message;
-  status.className = `status show ${type}`;
+const STATUS_MS = 3000;
+// Long enough to notice a mistake and reach for Undo
+const UNDO_STATUS_MS = 6000;
+let statusTimer = null;
 
-  setTimeout(() => {
-    status.className = "status";
-  }, 3000);
+// action, when given, is { label, run } and shows as a button in the toast
+function showStatus(message, type, action = null) {
+  const status = document.getElementById("status");
+  const button = document.getElementById("status-action");
+  document.getElementById("status-text").textContent = message;
+  status.className = `status show ${type}`;
+  button.hidden = !action;
+  button.textContent = action ? action.label : "";
+  button.onclick = action
+    ? () => {
+        status.className = "status";
+        action.run();
+      }
+    : null;
+
+  clearTimeout(statusTimer);
+  statusTimer = setTimeout(
+    () => {
+      status.className = "status";
+    },
+    action ? UNDO_STATUS_MS : STATUS_MS,
+  );
 }
 
 // Maps settings-checkbox element ids to their settings keys
@@ -64,6 +85,7 @@ const SETTING_SLIDERS = {
 };
 
 function renderSettings() {
+  renderLook();
   Object.entries(SETTING_CHECKBOXES).forEach(([id, key]) => {
     document.getElementById(id).checked = meta.settings[key];
   });
@@ -99,6 +121,9 @@ function renderSetTabs() {
   newTab.dataset.action = "new-set";
   newTab.textContent = "+ New";
   tabs.appendChild(newTab);
+  // Every set change (switch, rename, delete, import) re-renders the tabs, so
+  // this keeps the preview showing the set being edited
+  sendPreview();
 }
 
 function downloadJson(filename, value) {
@@ -242,23 +267,25 @@ function renderGroups() {
   const container = document.getElementById("groups-container");
   container.innerHTML = "";
 
+  const hideButton = (hidden, attrs) =>
+    `<button class="icon-btn${hidden ? " active" : ""}" data-action="toggle-hide" ${attrs} title="${hidden ? "Show" : "Hide"}" aria-pressed="${hidden}">${hidden ? "🙈" : "👁"}</button>`;
+
   editingGroups.forEach((group, groupIndex) => {
     const groupDiv = document.createElement("div");
     groupDiv.className = "group";
     groupDiv.dataset.groupIndex = groupIndex;
+    const groupAttrs = `data-group="${groupIndex}"`;
     groupDiv.innerHTML = `
-      <div class="group-header">
-        <span class="drag-handle">&#9776;</span>
-        <input type="text" value="${escapeHtml(group.label)}" placeholder="Group name" data-group="${groupIndex}" data-field="label">
-        <label>
-          <input type="checkbox" ${group.hide ? "checked" : ""} data-group="${groupIndex}" data-field="hide"> Hide
-        </label>
-        <button class="btn btn-danger btn-small" data-action="delete-group" data-group="${groupIndex}">Delete Group</button>
+      <div class="group-header${group.hide ? " is-hidden" : ""}">
+        <span class="drag-handle" title="Drag to reorder">&#9776;</span>
+        <input type="text" value="${escapeHtml(group.label)}" placeholder="Group name" ${groupAttrs} data-field="label">
+        ${hideButton(group.hide, groupAttrs)}
+        <button class="icon-btn delete" data-action="delete-group" ${groupAttrs} title="Delete group">✕</button>
       </div>
       <div class="group-content">
-        <div class="links-container" id="links-${groupIndex}" data-group="${groupIndex}"></div>
+        <div class="links-container" id="links-${groupIndex}" ${groupAttrs}></div>
         <div class="add-link-area">
-          <button class="btn btn-primary btn-small" data-action="add-link" data-group="${groupIndex}">Add Link</button>
+          <button class="link-add" data-action="add-link" ${groupAttrs}>+ Add link</button>
         </div>
       </div>
     `;
@@ -268,19 +295,16 @@ function renderGroups() {
     const linksContainer = document.getElementById(`links-${groupIndex}`);
     group.links.forEach((link, linkIndex) => {
       const linkDiv = document.createElement("div");
-      linkDiv.className = "link";
+      linkDiv.className = "link" + (link.hide ? " is-hidden" : "");
       linkDiv.dataset.groupIndex = groupIndex;
       linkDiv.dataset.linkIndex = linkIndex;
+      const linkAttrs = `data-group="${groupIndex}" data-link="${linkIndex}"`;
       linkDiv.innerHTML = `
-        <span class="drag-handle">&#9776;</span>
-        <input type="text" value="${escapeHtml(link.label)}" placeholder="Link name" data-group="${groupIndex}" data-link="${linkIndex}" data-field="label">
-        <input type="url" value="${escapeHtml(link.url)}" placeholder="https://example.com" data-group="${groupIndex}" data-link="${linkIndex}" data-field="url">
-        <label>
-          <input type="checkbox" ${link.hide ? "checked" : ""} data-group="${groupIndex}" data-link="${linkIndex}" data-field="hide"> Hide
-        </label>
-        <div class="link-actions">
-          <button class="btn btn-danger btn-small" data-action="delete-link" data-group="${groupIndex}" data-link="${linkIndex}">Delete</button>
-        </div>
+        <span class="drag-handle" title="Drag to reorder">&#9776;</span>
+        <input type="text" value="${escapeHtml(link.label)}" placeholder="Name" ${linkAttrs} data-field="label">
+        <input type="url" value="${escapeHtml(link.url)}" placeholder="https://example.com" ${linkAttrs} data-field="url">
+        ${hideButton(link.hide, linkAttrs)}
+        <button class="icon-btn delete" data-action="delete-link" ${linkAttrs} title="Delete link">✕</button>
       `;
       linksContainer.appendChild(linkDiv);
     });
@@ -328,12 +352,28 @@ function handleLinkChange(e) {
   scheduleSave();
 }
 
-function handleButtonClick(e) {
-  const action = e.target.dataset.action;
-  if (!action) return;
+// Toast with an Undo that re-applies restore to the set it came from; if
+// another set is open by then, the undo quietly does nothing
+function offerUndo(message, restore) {
+  const setName = editingSetName;
+  showStatus(message, "info", {
+    label: "Undo",
+    run: () => {
+      if (editingSetName !== setName) return;
+      restore();
+      renderGroups();
+      flushSave();
+    },
+  });
+}
 
-  const groupIndex = parseInt(e.target.dataset.group);
-  const linkIndex = parseInt(e.target.dataset.link);
+function handleButtonClick(e) {
+  const target = e.target.closest("[data-action]");
+  if (!target) return;
+  const action = target.dataset.action;
+
+  const groupIndex = parseInt(target.dataset.group);
+  const linkIndex = parseInt(target.dataset.link);
 
   switch (action) {
     case "add-group":
@@ -346,13 +386,25 @@ function handleButtonClick(e) {
       flushSave();
       break;
 
-    case "delete-group":
-      if (confirm("Are you sure you want to delete this group?")) {
-        editingGroups.splice(groupIndex, 1);
-        renderGroups();
-        flushSave();
-      }
+    case "delete-group": {
+      const [removed] = editingGroups.splice(groupIndex, 1);
+      renderGroups();
+      flushSave();
+      offerUndo(`Deleted "${removed.label}"`, () =>
+        editingGroups.splice(groupIndex, 0, removed),
+      );
       break;
+    }
+
+    case "toggle-hide": {
+      const item = Number.isNaN(linkIndex)
+        ? editingGroups[groupIndex]
+        : editingGroups[groupIndex].links[linkIndex];
+      item.hide = !item.hide;
+      renderGroups();
+      flushSave();
+      break;
+    }
 
     case "add-link":
       editingGroups[groupIndex].links.push({
@@ -364,13 +416,16 @@ function handleButtonClick(e) {
       flushSave();
       break;
 
-    case "delete-link":
-      if (confirm("Are you sure you want to delete this link?")) {
-        editingGroups[groupIndex].links.splice(linkIndex, 1);
-        renderGroups();
-        flushSave();
-      }
+    case "delete-link": {
+      const group = editingGroups[groupIndex];
+      const [removed] = group.links.splice(linkIndex, 1);
+      renderGroups();
+      flushSave();
+      offerUndo(`Deleted "${removed.label}"`, () =>
+        group.links.splice(linkIndex, 0, removed),
+      );
       break;
+    }
 
     case "clear-groups":
       if (confirm("Are you sure you want to clear all link groups?")) {
@@ -537,17 +592,17 @@ function handleButtonClick(e) {
 async function importAllData(data) {
   // A pending save could restore pre-import state under a stale key
   cancelPendingSave();
-  let importedSettings = { ...defaultSettings };
+  let importedSettings = backfillSettings({}).settings;
   let importedSets;
   // Handle old array format
   if (Array.isArray(data)) {
     importedSets = { [DEFAULT_SET_NAME]: data };
   } else if (data && data.sets) {
-    importedSettings = { ...defaultSettings, ...data.settings };
+    importedSettings = backfillSettings({ settings: data.settings }).settings;
     importedSets = data.sets;
   } else if (data && data.groups) {
     // Single-set format from before link sets existed
-    importedSettings = { ...defaultSettings, ...data.settings };
+    importedSettings = backfillSettings({ settings: data.settings }).settings;
     importedSets = { [DEFAULT_SET_NAME]: data.groups };
   } else {
     throw new Error("Unrecognized data format");
@@ -588,6 +643,230 @@ async function importAllData(data) {
   showStatus("Data imported successfully!", "success");
 }
 
+// ---- Look ----
+
+const STYLE_LABELS = { auto: "Auto", dark: "Dark", light: "Light", system: "System" };
+const EDGE_LABELS = { none: "None", line: "Line", rim: "Frosted rim", "rim-line": "Rim + line" };
+const BLURS_PX = [0, 6, 12, 18, 24, 36, 48, 72];
+const CORNERS = [
+  [0, "Square"],
+  [0.25, "Slight"],
+  [0.5, "Soft"],
+  [0.75, "Medium"],
+  [1, "Round"],
+  [1.5, "Rounder"],
+  [2, "Pill"],
+];
+const CUSTOM_PRESET = "Custom";
+// The drawer needs to stay readable over any photo, so it's more opaque than
+// the panels it's styled after
+const DRAWER_ALPHA = "e6";
+const FIELD_BACKGROUND = { dark: "#0000004d", light: "#ffffff66" };
+
+const fillSelect = (select, entries) => {
+  select.innerHTML = entries
+    .map(([value, label]) => `<option value="${value}">${escapeHtml(label)}</option>`)
+    .join("");
+};
+
+const matchingPreset = (look) =>
+  LOOK_PRESETS.find((preset) =>
+    ["style", "blur", "edge", "tone", "corners"].every((key) => preset[key] === look[key]),
+  );
+
+function renderLook() {
+  const look = meta.settings.look;
+  document.querySelectorAll("#look-layout button").forEach((button) => {
+    button.setAttribute("aria-pressed", button.dataset.layout === look.layout);
+  });
+  document.getElementById("look-preset").value = matchingPreset(look)?.name ?? CUSTOM_PRESET;
+  document.getElementById("look-style").value = look.style;
+  document.getElementById("look-blur").value = look.blur;
+  document.getElementById("look-edge").value = look.edge;
+  document.getElementById("look-corners").value = look.corners;
+  renderTone();
+  applyDrawerTheme();
+}
+
+// The tone's default depends on the photo (Auto) or the OS (System), so it's
+// shown once the preview photo's color is known
+function renderTone() {
+  const look = meta.settings.look;
+  const tone = previewRgb ? lookColors(look, previewRgb).tone : (look.tone ?? 0);
+  const custom = look.tone !== null;
+  document.getElementById("look-tone").value = tone;
+  const direction =
+    tone === 0 ? "Photo color" : `${tone > 0 ? "Lighter" : "Darker"} ${Math.abs(tone)}%`;
+  document.getElementById("look-tone-value").textContent = custom
+    ? direction
+    : `${direction} (default)`;
+  document.getElementById("look-tone-reset").hidden = !custom;
+}
+
+function updateLook(changes, { debounce = false } = {}) {
+  Object.assign(meta.settings.look, changes);
+  renderLook();
+  debounce ? scheduleSave() : flushSave();
+}
+
+function setupLook() {
+  fillSelect(document.getElementById("look-preset"), [
+    [CUSTOM_PRESET, CUSTOM_PRESET],
+    ...LOOK_PRESETS.map((preset) => [preset.name, preset.name]),
+  ]);
+  fillSelect(document.getElementById("look-style"), LOOK_STYLES.map((s) => [s, STYLE_LABELS[s]]));
+  fillSelect(document.getElementById("look-blur"), BLURS_PX.map((b) => [b, b ? `${b}px` : "None"]));
+  fillSelect(document.getElementById("look-edge"), LOOK_EDGES.map((e) => [e, EDGE_LABELS[e]]));
+  fillSelect(document.getElementById("look-corners"), CORNERS);
+
+  document.getElementById("look-layout").addEventListener("click", (e) => {
+    const layout = e.target.closest("button")?.dataset.layout;
+    if (layout) updateLook({ layout });
+  });
+  document.getElementById("look-preset").addEventListener("change", (e) => {
+    const preset = LOOK_PRESETS.find((p) => p.name === e.target.value);
+    if (!preset) return;
+    const { name, ...look } = preset;
+    updateLook(look);
+  });
+  document.getElementById("look-style").addEventListener("change", (e) =>
+    updateLook({ style: e.target.value }),
+  );
+  document.getElementById("look-blur").addEventListener("change", (e) =>
+    updateLook({ blur: Number(e.target.value) }),
+  );
+  document.getElementById("look-edge").addEventListener("change", (e) =>
+    updateLook({ edge: e.target.value }),
+  );
+  document.getElementById("look-corners").addEventListener("change", (e) =>
+    updateLook({ corners: Number(e.target.value) }),
+  );
+  // Debounced while dragging, like the size sliders
+  document.getElementById("look-tone").addEventListener("input", (e) =>
+    updateLook({ tone: Number(e.target.value) }, { debounce: true }),
+  );
+  document.getElementById("look-tone-reset").addEventListener("click", () =>
+    updateLook({ tone: null }),
+  );
+  systemDark.addEventListener("change", renderLook);
+}
+
+// Styles the drawer after the current look over the preview photo
+function applyDrawerTheme() {
+  if (!previewRgb) return;
+  const look = meta.settings.look;
+  const colors = lookColors(look, previewRgb);
+  const root = document.documentElement.style;
+  root.setProperty("--drawer-background", colors.panel + DRAWER_ALPHA);
+  root.setProperty("--ink", colors.text);
+  root.setProperty("--field-background", FIELD_BACKGROUND[colors.resolved]);
+  root.setProperty("--blur", `${look.blur}px`);
+}
+
+// ---- Preview ----
+
+const PREVIEW_MARGIN_PX = 32;
+const previewImages = allBackgroundImages();
+let previewRgb = null;
+let previewImage = null;
+
+const previewFrame = () => document.getElementById("preview");
+
+function sendPreview() {
+  previewFrame().contentWindow?.postMessage(
+    { type: "render", settings: meta.settings, groups: editingGroups, setName: editingSetName },
+    "*",
+  );
+}
+
+function showPreviewImage(url) {
+  previewFrame().contentWindow?.postMessage({ type: "image", url }, "*");
+}
+
+// Renders the preview at full window size and scales it to fit beside the
+// drawer, so the layout inside matches a real tab exactly
+function fitPreview() {
+  const frame = previewFrame();
+  const stage = document.querySelector(".stage");
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  const scale = Math.min(
+    (stage.clientWidth - 2 * PREVIEW_MARGIN_PX) / width,
+    (stage.clientHeight - 2 * PREVIEW_MARGIN_PX) / height,
+  );
+  frame.style.width = `${width}px`;
+  frame.style.height = `${height}px`;
+  frame.style.transform = `scale(${scale})`;
+  frame.parentElement.style.width = `${width * scale}px`;
+  frame.parentElement.style.height = `${height * scale}px`;
+}
+
+function setupPreview() {
+  const select = document.getElementById("preview-image");
+  select.innerHTML = SEASONS.map((season) => {
+    const options = previewImages
+      .filter((url) => url.includes(`/${season}/`))
+      .map((url) => `<option value="${url}">${url.split("/").pop()}</option>`)
+      .join("");
+    return `<optgroup label="${season}">${options}</optgroup>`;
+  }).join("");
+  const step = (delta) => {
+    const i = previewImages.indexOf(previewImage);
+    showPreviewImage(previewImages[(i + delta + previewImages.length) % previewImages.length]);
+  };
+  select.addEventListener("change", (e) => showPreviewImage(e.target.value));
+  document.getElementById("preview-prev").addEventListener("click", () => step(-1));
+  document.getElementById("preview-next").addEventListener("click", () => step(1));
+  document.getElementById("preview-random").addEventListener("click", () =>
+    showPreviewImage(previewImages[Math.floor(Math.random() * previewImages.length)]),
+  );
+
+  window.addEventListener("message", (e) => {
+    if (e.source !== previewFrame().contentWindow) return;
+    if (e.data.type === "ready") {
+      sendPreview();
+    } else if (e.data.type === "image") {
+      previewImage = e.data.url;
+      previewRgb = e.data.rgb;
+      select.value = previewImage;
+      document.documentElement.style.setProperty("--image", `url(${previewImage})`);
+      renderLook();
+    }
+  });
+  window.addEventListener("resize", fitPreview);
+  fitPreview();
+}
+
+// ---- Drawer tabs ----
+
+const TAB_STORAGE_KEY = "settingsTab";
+
+function showTab(name) {
+  document.querySelectorAll(".tab").forEach((tab) => {
+    tab.setAttribute("aria-selected", tab.dataset.tab === name);
+  });
+  document.querySelectorAll("section[data-panel]").forEach((panel) => {
+    panel.hidden = panel.dataset.panel !== name;
+  });
+  // Remembering the tab is a convenience; storage can be unavailable
+  try {
+    localStorage.setItem(TAB_STORAGE_KEY, name);
+  } catch {}
+}
+
+function setupTabs() {
+  document.querySelector(".tabs").addEventListener("click", (e) => {
+    const name = e.target.closest(".tab")?.dataset.tab;
+    if (name) showTab(name);
+  });
+  // ?tab= opens a specific tab (the screenshot script uses it)
+  let saved = new URLSearchParams(location.search).get("tab");
+  try {
+    saved ??= localStorage.getItem(TAB_STORAGE_KEY);
+  } catch {}
+  showTab(document.querySelector(`.tab[data-tab="${saved}"]`) ? saved : "look");
+}
+
 async function init() {
   if (!isExtension) {
     showStatus(
@@ -603,9 +882,12 @@ async function init() {
     editingSetName = activeSetName;
     editingGroups = await loadSetGroups(editingSetName);
 
+    setupTabs();
+    setupLook();
     renderSettings();
     renderSetTabs();
     renderGroups();
+    setupPreview();
 
     // Best-effort flush of a debounced save if the page closes mid-typing
     window.addEventListener("beforeunload", () => {
