@@ -3,6 +3,11 @@ name: Publish to Chrome Web Store
 on:
   push:
     branches: [release]
+    # Store listing assets and docs aren't in the zip, so changes to only
+    # these would publish an identical extension under a new version.
+    paths-ignore:
+      - "store/**"
+      - "**.md"
 
 jobs:
   publish:
