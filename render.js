@@ -328,9 +328,9 @@ function applyLook(look, rgb) {
   root.setProperty("--panel-blur", `${look.blur}px`);
   root.setProperty("--panel-radius", `${look.corners}em`);
   root.setProperty(
-    "--panel-line",
+    "--panel-line-color",
     look.edge.endsWith("line")
-      ? `inset 0 0 0 1.5px color-mix(in srgb, var(--text) ${LINE_STRENGTH}, transparent)`
-      : "none",
+      ? `color-mix(in srgb, var(--text) ${LINE_STRENGTH}, transparent)`
+      : "transparent",
   );
 }
