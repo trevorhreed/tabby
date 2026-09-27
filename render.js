@@ -136,9 +136,9 @@ const LONG_DATE = new Intl.DateTimeFormat(undefined, {
   month: "long",
   day: "numeric",
 });
-// Layouts where the clock heads a column show it lock-screen style: the date
-// on its own line above a large time
-const STACKED_CLOCK_LAYOUTS = ["center", "sidebar"];
+// Layouts where the clock is a centerpiece show it lock-screen style: the
+// date on its own line above a large time
+const STACKED_CLOCK_LAYOUTS = ["center", "sidebar", "dock"];
 
 // The clock's date and time as separate strings; the stacked style gets the
 // spelled-out date, the inline style the short one

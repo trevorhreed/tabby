@@ -134,7 +134,7 @@ body.no-favicons a.link .favicon {
 
   & > span {
     /* the size setting multiplies this */
-    font-size: 1.6rem;
+    font-size: 2.4rem;
   }
 
   /* Inline style: date and time on one line with a bullet between */
@@ -207,7 +207,6 @@ body[data-layout="dock"] {
     border-radius: var(--panel-radius);
 
     & > span {
-      font-size: 4rem;
       white-space: nowrap;
     }
   }
@@ -242,10 +241,11 @@ body[data-layout="sidebar"] {
   }
 }
 
-/* Lock-screen clock for the layouts where it heads a column: the date on
-   its own line above a large, light time */
+/* Lock-screen clock for the layouts where the clock is a centerpiece: the
+   date on its own line above a large, light time */
 body[data-layout="center"],
-body[data-layout="sidebar"] {
+body[data-layout="sidebar"],
+body[data-layout="dock"] {
   & .clock {
     /* x matches the links' text inset, so the divider lines up with them */
     --clock-pad-y: 1.1rem;
@@ -260,13 +260,13 @@ body[data-layout="sidebar"] {
   }
 
   & .clock-date {
-    font-size: 1.4rem;
+    font-size: 1.8rem;
     font-weight: 500;
     opacity: 0.85;
   }
 
   & .clock-time {
-    font-size: 6rem;
+    font-size: 8rem;
     font-weight: 200;
     line-height: 1;
     letter-spacing: -0.02em;
@@ -277,24 +277,26 @@ body[data-layout="sidebar"] {
     content: none;
   }
 
-  /* Divider between clock and links, inset by the clock's side padding;
-     it follows the edge setting, so it's invisible with no outline */
-  & .clock {
-    &::after {
-      content: "";
-      position: absolute;
-      left: calc(var(--clock-pad-x) * var(--density, 1));
-      right: calc(var(--clock-pad-x) * var(--density, 1));
-      bottom: 0;
-      height: var(--panel-line-width);
-      background: var(--panel-line-color);
-    }
-  }
-
   & .clock-suffix {
     font-size: 0.3em;
     font-weight: 500;
     letter-spacing: 0.05em;
+  }
+}
+
+/* Divider between clock and links in the stacked layouts, inset by the
+   clock's side padding; it follows the edge setting, so it's invisible with
+   no outline */
+body[data-layout="center"],
+body[data-layout="sidebar"] {
+  & .clock::after {
+    content: "";
+    position: absolute;
+    left: calc(var(--clock-pad-x) * var(--density, 1));
+    right: calc(var(--clock-pad-x) * var(--density, 1));
+    bottom: 0;
+    height: var(--panel-line-width);
+    background: var(--panel-line-color);
   }
 }
 
