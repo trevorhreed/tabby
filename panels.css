@@ -134,7 +134,7 @@ body.no-favicons a.link .favicon {
 
   & > span {
     /* the size setting multiplies this */
-    font-size: 2.4rem;
+    font-size: 3.2rem;
   }
 
   /* Inline style: date and time on one line with a bullet between */
@@ -225,13 +225,13 @@ body[data-layout="center"] {
   }
 
   & .clock-date {
-    font-size: 1.8rem;
+    font-size: 2.4rem;
     font-weight: 500;
     opacity: 0.85;
   }
 
   & .clock-time {
-    font-size: 8rem;
+    font-size: 11rem;
     font-weight: 200;
     line-height: 1;
     letter-spacing: -0.02em;
