@@ -253,13 +253,13 @@ body[data-layout="center"] {
   }
 
   & .clock-date {
-    font-size: 2.4rem;
+    font-size: 2rem;
     font-weight: 500;
     opacity: 0.85;
   }
 
   & .clock-time {
-    font-size: 11rem;
+    font-size: 9rem;
     font-weight: 200;
     line-height: 1;
     letter-spacing: -0.02em;
