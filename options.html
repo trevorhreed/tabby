@@ -256,6 +256,10 @@
         overflow: hidden;
       }
 
+      .segmented-3 {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
       .segmented button {
         padding: 8px 0;
         border: 0;
@@ -579,6 +583,15 @@
               <button data-layout="center">Center</button>
               <button data-layout="dock">Dock</button>
               <button data-layout="sidebar">Sidebar</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <span class="field-label">Link spacing</span>
+            <div class="segmented segmented-3" id="look-density">
+              <button data-density="compact">Compact</button>
+              <button data-density="comfortable">Comfortable</button>
+              <button data-density="spacious">Spacious</button>
             </div>
           </div>
 

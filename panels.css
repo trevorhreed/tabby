@@ -139,14 +139,6 @@ body.no-favicons a.link .favicon {
   }
 }
 
-/* Frostier edge for the "Rim" edge styles: a ring overlaid on each panel
-   (see attachRims in render.js) whose own blur stacks on the panel's */
-.panel-rim {
-  position: fixed;
-  pointer-events: none;
-  z-index: 3;
-}
-
 /* Layouts. Corners is the default above: links top-left, clock
    bottom-right, each with its corner against the screen edge squared off. */
 
@@ -262,5 +254,42 @@ body[data-layout="sidebar"] {
     font-size: 0.3em;
     font-weight: 500;
     letter-spacing: 0.05em;
+  }
+}
+
+/* Link density; comfortable is the base spacing above */
+body[data-density="compact"] .link-groups {
+  & a.link {
+    padding: 0.25rem 0.6rem;
+  }
+
+  & .group {
+    margin-bottom: 0.9rem;
+
+    & label {
+      padding: 0.25rem 0.6rem;
+    }
+  }
+
+  & .links {
+    gap: 0.2rem;
+  }
+}
+
+body[data-density="spacious"] .link-groups {
+  & a.link {
+    padding: 0.75rem 1.3rem;
+  }
+
+  & .group {
+    margin-bottom: 2.6rem;
+
+    & label {
+      padding: 0.6rem 1.3rem;
+    }
+  }
+
+  & .links {
+    gap: 0.9rem;
   }
 }

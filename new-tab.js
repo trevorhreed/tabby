@@ -2,7 +2,7 @@
 // and drives it with postMessage instead of storage, so edits show before the
 // debounced save lands. Preview → parent: { type: "ready" } once it's
 // listening, then { type: "image", url, rgb } whenever a photo is showing.
-// Parent → preview: { type: "render", settings, groups, setName } and
+// Parent → preview: { type: "render", settings, groups, setName, setCount } and
 // { type: "image", url }.
 // Only when actually framed: opened directly, parent is the page itself and
 // its own messages would loop back
@@ -11,6 +11,8 @@ const PREVIEW =
 
 let currentSettings = null;
 let currentRgb = null;
+// With a single link set there's nothing to switch to, so the switcher hides
+let setCount = 0;
 
 function initSetSwitcher(setNames, activeSetName) {
   const toggle = document.getElementById("set-switcher-toggle");
@@ -52,13 +54,14 @@ function initSetSwitcher(setNames, activeSetName) {
 function renderSettings(settings) {
   currentSettings = settings;
   applyScales(settings);
-  applyLayout(settings.look.layout);
+  applyLayout(settings.look);
 
   // The set switcher only affects links, so it hides along with them
   document.body.classList.toggle("no-favicons", !settings.showFavicons);
   const showLinks = settings.showLinks ? "" : "none";
   document.getElementById("link-groups").style.display = showLinks;
-  document.getElementById("set-switcher").style.display = showLinks;
+  document.getElementById("set-switcher").style.display =
+    settings.showLinks && setCount > 1 ? "" : "none";
 
   // The clock panel only shows when at least one of its segments does
   const clockSection = document.getElementById("clock");
@@ -88,6 +91,7 @@ function initPreview() {
     if (e.source !== parent) return;
     const message = e.data;
     if (message.type === "render") {
+      setCount = message.setCount;
       renderSettings(message.settings);
       renderLinkGroups(message.groups);
       document.getElementById("set-switcher-toggle").textContent =
@@ -101,6 +105,7 @@ function initPreview() {
 
 async function init() {
   const meta = await loadMeta();
+  setCount = meta.setNames.length;
   renderSettings(meta.settings);
   setInterval(() => updateClock(currentSettings), 100);
 
