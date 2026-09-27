@@ -12,6 +12,9 @@ const LEGACY_SYNC_KEY = "tabbyData";
 const LOCAL_ACTIVE_SET_KEY = "activeSet";
 const DEFAULT_SET_NAME = "Default";
 
+// Largest Size setting (200%); the settings slider's max matches
+const MAX_SCALE = 2;
+
 const defaultSettings = {
   showLinks: true,
   showDate: true,
@@ -19,7 +22,7 @@ const defaultSettings = {
   twelveHourClock: true,
   showFavicons: true,
   showSeconds: true,
-  // Size multiplier for both new-tab panels
+  // Size multiplier for both new-tab panels, up to MAX_SCALE
   scale: 1,
   // Panel look; the Frosted preset (see LOOK_PRESETS in render.js)
   look: {
@@ -103,7 +106,7 @@ const backfillSettings = (meta) => {
     look: { ...defaultSettings.look, ...storedLook, ...keptLayout(storedLook.layout) },
     // Links and clock used to have separate sizes; the links size carries
     // over as the shared one
-    scale: stored.scale ?? linksScale ?? defaultSettings.scale,
+    scale: Math.min(MAX_SCALE, stored.scale ?? linksScale ?? defaultSettings.scale),
   };
   return meta;
 };
