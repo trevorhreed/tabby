@@ -259,6 +259,10 @@
         cursor: pointer;
       }
 
+      .toggle[hidden] {
+        display: none;
+      }
+
       .toggle small {
         display: block;
         color: var(--ink-muted);
@@ -629,6 +633,11 @@
               <button data-layout="center">Center</button>
             </div>
           </div>
+
+          <label class="toggle" id="look-attached-row">
+            <input type="checkbox" id="look-attached" />
+            <span>Attach panels to the corners<small>Each panel sits flush in its corner of the screen</small></span>
+          </label>
 
           <div class="field">
             <span class="field-label">Density</span>

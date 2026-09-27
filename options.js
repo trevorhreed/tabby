@@ -733,6 +733,9 @@ function renderLook() {
   document.querySelectorAll("#look-layout button").forEach((button) => {
     button.setAttribute("aria-pressed", button.dataset.layout === look.layout);
   });
+  document.getElementById("look-attached").checked = look.attached;
+  // Attaching only means something in Corners
+  document.getElementById("look-attached-row").hidden = look.layout !== "corners";
   document.querySelectorAll("#look-density button").forEach((button) => {
     button.setAttribute("aria-pressed", button.dataset.density === look.density);
   });
@@ -775,6 +778,9 @@ function setupLook() {
     const layout = e.target.closest("button")?.dataset.layout;
     if (layout) updateLook({ layout });
   });
+  document.getElementById("look-attached").addEventListener("change", (e) =>
+    updateLook({ attached: e.target.checked }),
+  );
   document.getElementById("look-density").addEventListener("click", (e) => {
     const density = e.target.closest("button")?.dataset.density;
     if (density) updateLook({ density });
