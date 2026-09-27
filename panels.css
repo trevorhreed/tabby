@@ -58,7 +58,7 @@ body.no-favicons a.link .favicon {
   border-radius: var(--panel-radius);
   backdrop-filter: blur(var(--panel-blur));
   box-shadow: var(--panel-line);
-  padding: calc(1rem * var(--density, 1));
+  padding: calc(1.75rem * var(--density, 1));
   max-height: 100%;
   overflow: auto;
 }
@@ -124,8 +124,8 @@ body.no-favicons a.link .favicon {
   /* Matches the links panel: its padding vertically, and its text inset
      (panel padding plus link padding) horizontally, so the two panels read
      as a set. --density comes from the density setting (end of file). */
-  --clock-pad-y: 1rem;
-  --clock-pad-x: 2rem;
+  --clock-pad-y: 1.25rem;
+  --clock-pad-x: 2.75rem;
   padding: calc(var(--clock-pad-y) * var(--density, 1)) calc(var(--clock-pad-x) * var(--density, 1));
   z-index: 1;
   border-top-right-radius: 0;
@@ -165,7 +165,9 @@ body[data-layout="center"] {
     display: flex;
     flex-direction: column;
     max-height: 100%;
-    overflow: auto;
+    /* when the panel is taller than the window, only the links scroll, so
+       the clock and the footer controls stay in view */
+    overflow: hidden;
     border-radius: var(--panel-radius);
     background: var(--panel-background);
     backdrop-filter: blur(var(--panel-blur));
@@ -183,12 +185,18 @@ body[data-layout="center"] {
     overflow: visible;
   }
 
+  & .link-groups {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+  }
+
   /* Lock-screen clock: the date on its own line above a large, light time */
   & .clock {
     order: -1;
     /* x matches the links' text inset, so the divider lines up with them */
-    --clock-pad-y: 1.1rem;
-    --clock-pad-x: 2rem;
+    --clock-pad-y: 1.75rem;
+    --clock-pad-x: 2.75rem;
     text-align: center;
 
     & > span {
@@ -219,11 +227,11 @@ body[data-layout="center"] {
     align-items: center;
     justify-content: flex-end;
     gap: calc(0.25rem * var(--density, 1));
-    padding: 0 calc(1.25rem * var(--density, 1)) calc(1rem * var(--density, 1));
+    padding: 0 calc(2rem * var(--density, 1)) calc(1.5rem * var(--density, 1));
   }
 
-  /* Open upward: the panel scrolls (overflow: auto), so a menu hanging
-     below it would be clipped */
+  /* Open upward: the panel clips its overflow, so a menu hanging below it
+     would be cut off */
   & .set-switcher-menu {
     top: auto;
     bottom: calc(100% + 0.5rem);
@@ -257,7 +265,7 @@ body[data-layout="center"] {
 /* Density scales every padding and gap in both panels (the calc()s using
    --density above); comfortable is 1 */
 body[data-density="compact"] {
-  --density: 0.6;
+  --density: 0.7;
 }
 
 body[data-density="spacious"] {
