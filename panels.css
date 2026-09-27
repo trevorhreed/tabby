@@ -129,8 +129,8 @@ body.no-favicons a.link .favicon {
   border-bottom-right-radius: 0;
 
   & > span {
-    /* same base size as the links; the clock-scale setting adjusts it */
-    font-size: 1rem;
+    /* the clock-scale setting multiplies this */
+    font-size: 1.6rem;
   }
 
   /* Inline style: date and time on one line with a bullet between */
@@ -173,7 +173,7 @@ body[data-layout="dock"] {
     border-radius: var(--panel-radius);
 
     & > span {
-      font-size: 3rem;
+      font-size: 4rem;
       white-space: nowrap;
     }
   }
@@ -233,13 +233,13 @@ body[data-layout="sidebar"] {
   }
 
   & .clock-date {
-    font-size: 1.1rem;
+    font-size: 1.4rem;
     font-weight: 500;
     opacity: 0.85;
   }
 
   & .clock-time {
-    font-size: 4.5rem;
+    font-size: 6rem;
     font-weight: 200;
     line-height: 1;
     letter-spacing: -0.02em;
