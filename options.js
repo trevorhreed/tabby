@@ -826,7 +826,7 @@ function sendPreview() {
       settings: meta.settings,
       groups: editingGroups,
       setName: editingSetName,
-      setCount: meta.setNames.length,
+      setNames: meta.setNames,
     },
     "*",
   );

@@ -164,7 +164,7 @@ body[data-layout="corners"] {
   top: var(--space-3);
   right: var(--space-3);
   z-index: 3;
-  padding: 0.25rem;
+  padding: 0;
   border-radius: min(var(--panel-radius), 1rem);
   background: var(--panel-background);
   backdrop-filter: blur(var(--panel-blur));
