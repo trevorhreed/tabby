@@ -36,14 +36,15 @@ shot() {
   echo "store/$1.png"
 }
 
-# One season per shot, each in a different layout and preset to show the range
+# One season per shot, each with a different layout, preset and density to
+# show the range
 shot screenshot-new-tab-autumn new-tab.html 2026-10-14 \
   '{"layout":"corners","style":"auto","blur":12,"edge":"none","corners":1}'
 shot screenshot-new-tab-winter new-tab.html 2026-01-14 \
   '{"layout":"center","style":"light","blur":18,"edge":"line","corners":1}'
 shot screenshot-new-tab-spring new-tab.html 2026-04-14 \
-  '{"layout":"dock","style":"auto","blur":6,"edge":"line","corners":0.75}'
+  '{"layout":"corners","style":"dark","blur":12,"edge":"none","corners":0.75,"density":"compact"}'
 shot screenshot-new-tab-summer new-tab.html 2026-07-14 \
-  '{"layout":"sidebar","style":"auto","blur":24,"edge":"none","corners":1,"density":"spacious"}'
+  '{"layout":"center","style":"auto","blur":24,"edge":"none","corners":1,"density":"spacious"}'
 shot screenshot-options options.html 2026-10-14 \
   '{"layout":"corners","style":"auto","blur":12,"edge":"none","corners":1}' tab=look

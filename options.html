@@ -272,6 +272,10 @@
         overflow: hidden;
       }
 
+      .segmented-2 {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
       .segmented-3 {
         grid-template-columns: repeat(3, 1fr);
       }
@@ -603,11 +607,9 @@
         <section data-panel="look">
           <div class="field">
             <span class="field-label">Layout</span>
-            <div class="segmented" id="look-layout">
+            <div class="segmented segmented-2" id="look-layout">
               <button data-layout="corners">Corners</button>
               <button data-layout="center">Center</button>
-              <button data-layout="dock">Dock</button>
-              <button data-layout="sidebar">Sidebar</button>
             </div>
           </div>
 
