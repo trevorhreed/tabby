@@ -337,23 +337,6 @@
         border-color: var(--danger);
       }
 
-      .field-head {
-        display: flex;
-        justify-content: space-between;
-        align-items: baseline;
-        color: var(--ink-muted);
-        font-size: 12px;
-      }
-
-      .field-head .link-add {
-        font-size: 12px;
-        padding: 0;
-      }
-
-      .field-head [hidden] {
-        display: none;
-      }
-
       /* Small icon buttons on each row, shown on hover so the list stays calm */
       .icon-btn {
         width: 28px;
@@ -658,17 +641,6 @@
             <div class="field">
               <label for="look-corners">Corners</label>
               <select id="look-corners"></select>
-            </div>
-          </div>
-
-          <div class="field">
-            <div class="field-head">
-              <label for="look-tone">Tone</label>
-              <button class="link-add" id="look-tone-reset" title="Back to the style's default tone" hidden>↺ Reset</button>
-            </div>
-            <div class="field-row">
-              <input type="range" id="look-tone" min="-90" max="90" step="5" />
-              <span class="value" id="look-tone-value"></span>
             </div>
           </div>
 

@@ -714,7 +714,7 @@ const fillSelect = (select, entries) => {
 
 const matchingPreset = (look) =>
   LOOK_PRESETS.find((preset) =>
-    ["style", "blur", "edge", "tone", "corners"].every((key) => preset[key] === look[key]),
+    ["style", "blur", "edge", "corners"].every((key) => preset[key] === look[key]),
   );
 
 function renderLook() {
@@ -730,23 +730,7 @@ function renderLook() {
   document.getElementById("look-blur").value = look.blur;
   document.getElementById("look-edge").value = look.edge;
   document.getElementById("look-corners").value = look.corners;
-  renderTone();
   applyDrawerTheme();
-}
-
-// The tone's default depends on the photo (Auto) or the OS (System), so it's
-// shown once the preview photo's color is known
-function renderTone() {
-  const look = meta.settings.look;
-  const tone = previewRgb ? lookColors(look, previewRgb).tone : (look.tone ?? 0);
-  const custom = look.tone !== null;
-  document.getElementById("look-tone").value = tone;
-  const direction =
-    tone === 0 ? "Photo color" : `${tone > 0 ? "Lighter" : "Darker"} ${Math.abs(tone)}%`;
-  document.getElementById("look-tone-value").textContent = custom
-    ? direction
-    : `${direction} (default)`;
-  document.getElementById("look-tone-reset").hidden = !custom;
 }
 
 function updateLook(changes, { debounce = false } = {}) {
@@ -790,22 +774,6 @@ function setupLook() {
   );
   document.getElementById("look-corners").addEventListener("change", (e) =>
     updateLook({ corners: Number(e.target.value) }),
-  );
-  // Debounced while dragging, like the size sliders
-  document.getElementById("look-tone").addEventListener("input", (e) =>
-    updateLook({ tone: Number(e.target.value) }, { debounce: true }),
-  );
-  const toneSlider = document.getElementById("look-tone");
-  makeValueEditable(document.getElementById("look-tone-value"), {
-    // Negative is darker, positive lighter, as on the slider
-    get: () => Number(toneSlider.value),
-    set: (tone) => updateLook({ tone }),
-    min: Number(toneSlider.min),
-    max: Number(toneSlider.max),
-    label: "Tone, negative darker and positive lighter",
-  });
-  document.getElementById("look-tone-reset").addEventListener("click", () =>
-    updateLook({ tone: null }),
   );
   systemDark.addEventListener("change", renderLook);
 }

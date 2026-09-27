@@ -27,7 +27,6 @@ const defaultSettings = {
     style: "auto",
     blur: 12,
     edge: "none",
-    tone: null,
     corners: 1,
     density: "comfortable",
   },
@@ -89,10 +88,12 @@ const backfillSettings = (meta) => {
   // Backfill settings added after the meta was first written; look is merged
   // a level deeper so newly added look fields get defaults too
   const { linksScale, clockScale, ...current } = stored;
+  // Tone was a look setting briefly; panels always use the style's tone now
+  const { tone, ...storedLook } = stored.look ?? {};
   meta.settings = {
     ...defaultSettings,
     ...current,
-    look: { ...defaultSettings.look, ...stored.look },
+    look: { ...defaultSettings.look, ...storedLook },
     // Links and clock used to have separate sizes; the links size carries
     // over as the shared one
     scale: stored.scale ?? linksScale ?? defaultSettings.scale,

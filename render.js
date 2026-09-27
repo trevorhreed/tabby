@@ -259,10 +259,8 @@ async function showBackground(imageUrl, look) {
   return rgb;
 }
 
-// Look settings: how the panels sit over the photo. tone runs from -90
-// (toward black) through 0 (the photo's average) to +90 (toward white);
-// null means the style's default, which keeps Auto and System readable on
-// both bright and dark photos. corners is in em, so it scales with the panel.
+// Look settings: how the panels sit over the photo. corners is in em, so it
+// scales with the panel.
 const LOOK_STYLES = ["auto", "dark", "light", "system"];
 const LOOK_EDGES = ["none", "line"];
 // How much room the panels give their content: link padding, space between
@@ -270,20 +268,22 @@ const LOOK_EDGES = ["none", "line"];
 const LOOK_DENSITIES = ["compact", "comfortable", "spacious"];
 const LOOK_LAYOUTS = ["corners", "center", "dock", "sidebar"];
 const LOOK_PRESETS = [
-  { name: "Clear glass", style: "auto", blur: 6, edge: "line", tone: null, corners: 0.75 },
-  { name: "Frosted", style: "auto", blur: 12, edge: "none", tone: null, corners: 1 },
-  { name: "Heavy frost", style: "auto", blur: 24, edge: "none", tone: null, corners: 1 },
-  { name: "Smoked", style: "dark", blur: 12, edge: "none", tone: -65, corners: 0.75 },
-  { name: "Tinted", style: "dark", blur: 18, edge: "line", tone: -30, corners: 1.5 },
-  { name: "Milk glass", style: "light", blur: 18, edge: "line", tone: 70, corners: 1 },
-  { name: "Square", style: "auto", blur: 6, edge: "none", tone: null, corners: 0 },
-  { name: "Pill", style: "auto", blur: 12, edge: "line", tone: null, corners: 2 },
-  { name: "Follow system", style: "system", blur: 12, edge: "line", tone: null, corners: 1 },
+  { name: "Clear glass", style: "auto", blur: 6, edge: "line", corners: 0.75 },
+  { name: "Frosted", style: "auto", blur: 12, edge: "none", corners: 1 },
+  { name: "Heavy frost", style: "auto", blur: 24, edge: "none", corners: 1 },
+  { name: "Smoked", style: "dark", blur: 12, edge: "none", corners: 0.75 },
+  { name: "Tinted", style: "dark", blur: 18, edge: "line", corners: 1.5 },
+  { name: "Milk glass", style: "light", blur: 18, edge: "line", corners: 1 },
+  { name: "Square", style: "auto", blur: 6, edge: "none", corners: 0 },
+  { name: "Pill", style: "auto", blur: 12, edge: "line", corners: 2 },
+  { name: "Follow system", style: "system", blur: 12, edge: "line", corners: 1 },
 ];
 // Relative luminance above this means the photo is bright enough that a
 // light panel with dark text reads better than the usual dark panel
 const LIGHT_PANEL_THRESHOLD = 0.45;
-const DEFAULT_TONE = { dark: -50, light: 60 };
+// How far the panel moves from the photo's average color: toward black for
+// dark panels, toward white for light ones
+const PANEL_TONE = { dark: -50, light: 60 };
 const PANEL_ALPHA = "aa";
 const LINE_STRENGTH = "45%";
 
@@ -305,14 +305,14 @@ function resolveLookStyle(style, rgb) {
 }
 
 // Panel and text colors (opaque hex) for a look over a photo, plus whether
-// the panel came out light or dark and the tone actually used
+// the panel came out light or dark
 function lookColors(look, rgb) {
   const resolved = resolveLookStyle(look.style, rgb);
-  const tone = look.tone ?? DEFAULT_TONE[resolved];
+  const tone = PANEL_TONE[resolved];
   const amount = Math.abs(tone) / 100;
   const panel = tone >= 0 ? lightenColor(rgb, amount) : darkenColor(rgb, amount);
   const text = resolved === "light" ? darkenColor(rgb, 0.7) : lightenColor(rgb, 0.4);
-  return { panel: rgbToHex(panel), text: rgbToHex(text), resolved, tone };
+  return { panel: rgbToHex(panel), text: rgbToHex(text), resolved };
 }
 
 function applyLayout(look) {
