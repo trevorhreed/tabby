@@ -29,7 +29,6 @@ const defaultSettings = {
     layout: "corners",
     style: "auto",
     blur: 12,
-    edge: "none",
     corners: 1,
     density: "comfortable",
   },
@@ -98,8 +97,9 @@ const backfillSettings = (meta) => {
   // Backfill settings added after the meta was first written; look is merged
   // a level deeper so newly added look fields get defaults too
   const { linksScale, clockScale, ...current } = stored;
-  // Tone was a look setting briefly; panels always use the style's tone now
-  const { tone, ...storedLook } = stored.look ?? {};
+  // Tone and edge were look settings briefly; panels always use the
+  // style's tone and have no outline now
+  const { tone, edge, ...storedLook } = stored.look ?? {};
   meta.settings = {
     ...defaultSettings,
     ...current,

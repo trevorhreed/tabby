@@ -708,8 +708,6 @@ async function importAllData(data) {
 // ---- Look ----
 
 const STYLE_LABELS = { auto: "Auto", dark: "Dark", light: "Light", system: "System" };
-const EDGE_LABELS = { none: "None", line: "Line" };
-const BLURS_PX = [0, 6, 12, 18, 24, 36, 48, 72];
 const CORNERS = [
   [0, "Square"],
   [0.25, "Slight"],
@@ -733,7 +731,7 @@ const fillSelect = (select, entries) => {
 
 const matchingPreset = (look) =>
   LOOK_PRESETS.find((preset) =>
-    ["style", "blur", "edge", "corners"].every((key) => preset[key] === look[key]),
+    ["style", "blur", "corners"].every((key) => preset[key] === look[key]),
   );
 
 function renderLook() {
@@ -746,8 +744,13 @@ function renderLook() {
   });
   document.getElementById("look-preset").value = matchingPreset(look)?.name ?? CUSTOM_PRESET;
   document.getElementById("look-style").value = look.style;
-  document.getElementById("look-blur").value = look.blur;
-  document.getElementById("look-edge").value = look.edge;
+  // A blur saved off the list (from an older version) shows at the nearest stop
+  const blurIndex = LOOK_BLURS.reduce(
+    (best, px, i) => (Math.abs(px - look.blur) < Math.abs(LOOK_BLURS[best] - look.blur) ? i : best),
+    0,
+  );
+  document.getElementById("look-blur").value = blurIndex;
+  document.getElementById("look-blur-value").textContent = look.blur ? `${look.blur}px` : "None";
   document.getElementById("look-corners").value = look.corners;
   applyDrawerTheme();
 }
@@ -764,8 +767,11 @@ function setupLook() {
     ...LOOK_PRESETS.map((preset) => [preset.name, preset.name]),
   ]);
   fillSelect(document.getElementById("look-style"), LOOK_STYLES.map((s) => [s, STYLE_LABELS[s]]));
-  fillSelect(document.getElementById("look-blur"), BLURS_PX.map((b) => [b, b ? `${b}px` : "None"]));
-  fillSelect(document.getElementById("look-edge"), LOOK_EDGES.map((e) => [e, EDGE_LABELS[e]]));
+  const blurSlider = document.getElementById("look-blur");
+  blurSlider.max = LOOK_BLURS.length - 1;
+  document.getElementById("look-blur-stops").innerHTML = LOOK_BLURS.map(
+    (_, i) => `<option value="${i}"></option>`,
+  ).join("");
   fillSelect(document.getElementById("look-corners"), CORNERS);
 
   document.getElementById("look-layout").addEventListener("click", (e) => {
@@ -785,11 +791,9 @@ function setupLook() {
   document.getElementById("look-style").addEventListener("change", (e) =>
     updateLook({ style: e.target.value }),
   );
-  document.getElementById("look-blur").addEventListener("change", (e) =>
-    updateLook({ blur: Number(e.target.value) }),
-  );
-  document.getElementById("look-edge").addEventListener("change", (e) =>
-    updateLook({ edge: e.target.value }),
+  // Debounced while dragging, like the size slider
+  blurSlider.addEventListener("input", (e) =>
+    updateLook({ blur: LOOK_BLURS[Number(e.target.value)] }, { debounce: true }),
   );
   document.getElementById("look-corners").addEventListener("change", (e) =>
     updateLook({ corners: Number(e.target.value) }),

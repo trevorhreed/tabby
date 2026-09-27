@@ -262,21 +262,22 @@ async function showBackground(imageUrl, look) {
 // Look settings: how the panels sit over the photo. corners is in em, so it
 // scales with the panel.
 const LOOK_STYLES = ["auto", "dark", "light", "system"];
-const LOOK_EDGES = ["none", "line"];
 // How much room the panels give their content: link padding, space between
 // link groups, and the clock's padding
 const LOOK_DENSITIES = ["compact", "comfortable", "spacious"];
 const LOOK_LAYOUTS = ["corners", "center"];
+// Blur choices in px; the settings slider steps through these
+const LOOK_BLURS = [0, 6, 12, 18, 24, 36, 48, 72];
 const LOOK_PRESETS = [
-  { name: "Clear glass", style: "auto", blur: 6, edge: "line", corners: 0.75 },
-  { name: "Frosted", style: "auto", blur: 12, edge: "none", corners: 1 },
-  { name: "Heavy frost", style: "auto", blur: 24, edge: "none", corners: 1 },
-  { name: "Smoked", style: "dark", blur: 12, edge: "none", corners: 0.75 },
-  { name: "Tinted", style: "dark", blur: 18, edge: "line", corners: 1.5 },
-  { name: "Milk glass", style: "light", blur: 18, edge: "line", corners: 1 },
-  { name: "Square", style: "auto", blur: 6, edge: "none", corners: 0 },
-  { name: "Pill", style: "auto", blur: 12, edge: "line", corners: 2 },
-  { name: "Follow system", style: "system", blur: 12, edge: "line", corners: 1 },
+  { name: "Clear glass", style: "auto", blur: 6, corners: 0.75 },
+  { name: "Frosted", style: "auto", blur: 12, corners: 1 },
+  { name: "Heavy frost", style: "auto", blur: 24, corners: 1 },
+  { name: "Smoked", style: "dark", blur: 12, corners: 0.75 },
+  { name: "Tinted", style: "dark", blur: 18, corners: 1.5 },
+  { name: "Milk glass", style: "light", blur: 18, corners: 1 },
+  { name: "Square", style: "auto", blur: 6, corners: 0 },
+  { name: "Pill", style: "auto", blur: 12, corners: 2 },
+  { name: "Follow system", style: "system", blur: 12, corners: 1 },
 ];
 // Relative luminance above this means the photo is bright enough that a
 // light panel with dark text reads better than the usual dark panel
@@ -285,7 +286,6 @@ const LIGHT_PANEL_THRESHOLD = 0.45;
 // dark panels, toward white for light ones
 const PANEL_TONE = { dark: -50, light: 60 };
 const PANEL_ALPHA = "aa";
-const LINE_STRENGTH = "45%";
 
 const systemDark = window.matchMedia("(prefers-color-scheme: dark)");
 
@@ -327,10 +327,4 @@ function applyLook(look, rgb) {
   root.setProperty("--text", colors.text);
   root.setProperty("--panel-blur", `${look.blur}px`);
   root.setProperty("--panel-radius", `${look.corners}em`);
-  root.setProperty(
-    "--panel-line-color",
-    look.edge.endsWith("line")
-      ? `color-mix(in srgb, var(--text) ${LINE_STRENGTH}, transparent)`
-      : "transparent",
-  );
 }
