@@ -54,7 +54,7 @@ body.no-favicons a.link .favicon {
   /* box-shadow: 0 0 1em #000; */
   border-radius: var(--panel-radius);
   backdrop-filter: blur(var(--panel-blur));
-  padding: calc(1.75rem * var(--density, 1));
+  padding: calc(2.5rem * var(--density, 1));
   max-height: 100%;
   overflow: auto;
 }
@@ -120,8 +120,8 @@ body.no-favicons a.link .favicon {
   /* Matches the links panel: its padding vertically, and its text inset
      (panel padding plus link padding) horizontally, so the two panels read
      as a set. --density comes from the density setting (end of file). */
-  --clock-pad-y: 1.25rem;
-  --clock-pad-x: 2.75rem;
+  --clock-pad-y: 1.75rem;
+  --clock-pad-x: 3.5rem;
   padding: calc(var(--clock-pad-y) * var(--density, 1)) calc(var(--clock-pad-x) * var(--density, 1));
   z-index: 1;
   border-top-right-radius: 0;
@@ -196,8 +196,8 @@ body[data-layout="center"] {
   & .clock {
     order: -1;
     /* x matches the links' text inset, so the divider lines up with them */
-    --clock-pad-y: 1.75rem;
-    --clock-pad-x: 2.75rem;
+    --clock-pad-y: 2.5rem;
+    --clock-pad-x: 3.5rem;
     text-align: center;
 
     & > span {
@@ -221,7 +221,7 @@ body[data-layout="center"] {
     gap: calc(0.25rem * var(--density, 1));
     /* the buttons' own boxes add about 0.5rem around their glyphs, so this
        leaves the same visual gap below the gear as above the date */
-    padding: 0 calc(2rem * var(--density, 1)) calc(1.5rem * var(--density, 1));
+    padding: 0 calc(2.75rem * var(--density, 1)) calc(2.25rem * var(--density, 1));
 
     & .set-switcher-toggle {
       padding: 0 0.5rem;
