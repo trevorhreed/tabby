@@ -259,10 +259,6 @@
         cursor: pointer;
       }
 
-      .toggle[hidden] {
-        display: none;
-      }
-
       .toggle small {
         display: block;
         color: var(--ink-muted);
@@ -634,9 +630,9 @@
             </div>
           </div>
 
-          <label class="toggle" id="look-attached-row">
+          <label class="toggle">
             <input type="checkbox" id="look-attached" />
-            <span>Attach panels to the corners<small>Each panel sits flush in its corner of the screen</small></span>
+            <span>Attach to the corners<small id="look-attached-hint"></small></span>
           </label>
 
           <div class="field">
