@@ -191,6 +191,12 @@ body[data-layout="center"] {
     overflow: auto;
   }
 
+  /* Only the links give up height; the clock and footer keep theirs */
+  & .clock,
+  & .top-controls {
+    flex-shrink: 0;
+  }
+
   /* Lock-screen clock: the date on its own line above a large, light time */
   & .clock {
     order: -1;
@@ -223,11 +229,20 @@ body[data-layout="center"] {
      edge of the clock and links */
   & .top-controls {
     order: 1;
+    /* drop the corner offsets new-tab.html gives it for Corners; with
+       position: relative they'd push it down past the panel's edge */
+    inset: auto;
     display: flex;
     align-items: center;
     justify-content: flex-end;
     gap: calc(0.25rem * var(--density, 1));
+    /* the buttons' own boxes add about 0.5rem around their glyphs, so this
+       leaves the same visual gap below the gear as above the date */
     padding: 0 calc(2rem * var(--density, 1)) calc(1.5rem * var(--density, 1));
+
+    & .set-switcher-toggle {
+      padding: 0 0.5rem;
+    }
   }
 
   /* Open upward: the panel clips its overflow, so a menu hanging below it
