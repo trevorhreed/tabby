@@ -12,7 +12,9 @@
   /* Look settings; render.js's applyLook overrides these */
   --panel-radius: 1em;
   --panel-blur: 0px;
-  --panel-line: none;
+  --panel-line-color: transparent;
+  --panel-line-width: 1.5px;
+  --panel-line: inset 0 0 0 var(--panel-line-width) var(--panel-line-color);
 }
 
 body {
@@ -248,6 +250,34 @@ body[data-layout="sidebar"] {
 
   & .clock-date + .clock-time::before {
     content: none;
+  }
+
+  /* Where the clock meets the links, the two panels' outlines would stack
+     into a full-width rule; outline only the outer sides, and draw the
+     divider inset by the clock's side padding instead */
+  & .clock {
+    position: relative;
+    box-shadow:
+      inset var(--panel-line-width) 0 0 var(--panel-line-color),
+      inset calc(-1 * var(--panel-line-width)) 0 0 var(--panel-line-color),
+      inset 0 var(--panel-line-width) 0 var(--panel-line-color);
+
+    &::after {
+      content: "";
+      position: absolute;
+      left: 1.5rem;
+      right: 1.5rem;
+      bottom: 0;
+      height: var(--panel-line-width);
+      background: var(--panel-line-color);
+    }
+  }
+
+  & .link-groups {
+    box-shadow:
+      inset var(--panel-line-width) 0 0 var(--panel-line-color),
+      inset calc(-1 * var(--panel-line-width)) 0 0 var(--panel-line-color),
+      inset 0 calc(-1 * var(--panel-line-width)) 0 var(--panel-line-color);
   }
 
   & .clock-suffix {
