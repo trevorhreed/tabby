@@ -179,8 +179,7 @@ body.nothing-shown .top-controls {
    photo between them whenever they landed on fractional pixels (browser
    zoom, the scaled settings preview, the size slider). */
 body[data-layout="center"] {
-  /* the links' text inset from the panel edge; the clock and footer line up
-     with it */
+  /* the links' text inset from the panel edge; the clock lines up with it */
   --inset: calc(var(--space-4) + var(--link-pad-x));
 
   display: grid;
@@ -189,17 +188,21 @@ body[data-layout="center"] {
   /* keeps the panel off the window's edges when it's as tall as the window */
   padding: var(--space-3);
 
+  /* Grid: the clock with the controls in the top-right corner beside it,
+     and the links full-width below. The controls keep that corner whatever
+     is shown, like they do in Corners. */
   & .stack {
     position: relative;
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto minmax(0, 1fr);
     /* steady width, so toggling seconds, date or links doesn't resize the
        panel (or make the layout animation lurch) */
     min-width: calc(26rem * var(--panel-scale));
     max-width: calc(100vw - 2 * var(--space-3));
     max-height: 100%;
     /* when the panel is taller than the window, only the links scroll, so
-       the clock and the footer controls stay in view */
+       the clock and the controls stay in view */
     overflow: hidden;
     border-radius: var(--panel-radius);
     background: var(--panel-background);
@@ -217,28 +220,22 @@ body[data-layout="center"] {
 
   /* .stack > so it outranks the .stack > .panel reset above */
   & .stack > .link-groups {
+    grid-area: 2 / 1 / 3 / 3;
     padding: var(--space-5) var(--space-4) var(--space-4);
-    flex: 1 1 auto;
     min-height: 0;
     overflow: auto;
   }
 
-  /* Without the clock above, the links open the panel */
+  /* Without the clock above, the links sit just under the controls row */
   &.no-clock .stack > .link-groups {
-    padding-top: var(--space-4);
-  }
-
-  /* Only the links give up height; the clock and footer keep theirs */
-  & .clock,
-  & .top-controls {
-    flex-shrink: 0;
+    padding-top: var(--space-2);
   }
 
   /* Lock-screen clock: the date on its own line above a large, light time,
      left-aligned with the links so the panel reads as one card */
   & .clock {
-    order: -1;
-    padding: var(--space-4) var(--inset) 0;
+    grid-area: 1 / 1;
+    padding: var(--space-4) var(--space-2) 0 var(--inset);
 
     & > span {
       display: flex;
@@ -279,36 +276,33 @@ body[data-layout="center"] {
     letter-spacing: 0.05em;
   }
 
-  /* Footer row: set switcher on the left under the links, gear on the right */
+  /* Controls in the top-right corner; the offsets allow for the buttons'
+     own boxes, so the gear's glyph sits the text inset from the edges */
   & .top-controls {
-    order: 1;
-    padding: 0 calc(var(--inset) - 0.5rem) calc(var(--space-4) - 0.5rem);
-    padding-left: calc(var(--inset) - var(--switcher-pad-x));
+    grid-area: 1 / 2;
+    align-self: start;
+    padding: calc(var(--space-4) - 0.5rem) calc(var(--inset) - 0.5rem) 0 0;
   }
 
-  /* No links: nothing to switch, so the gear tucks into the panel's top
-     right corner instead of sitting alone under the clock */
-  &.no-links .top-controls {
-    position: absolute;
-    top: calc(var(--space-4) - 0.5rem);
-    right: calc(var(--inset) - 0.5rem);
-    padding: 0;
-  }
-
-  /* ...and the clock leaves room for it, so a long date never runs under
-     the gear */
   &.no-links .clock {
     padding-bottom: var(--space-4);
-    padding-right: calc(var(--inset) + 2.5rem);
   }
 
-  /* Open upward: the panel clips its overflow, so a menu hanging below it
-     would be cut off */
+  /* Drops down over the clock and links, right-aligned under the switcher.
+     A backdrop blur can't see through the panel's own blur, so the menu
+     stacks the translucent panel color three times to stay near-opaque and
+     keep the text underneath from showing through. */
+  & .top-controls {
+    z-index: 3;
+  }
+
   & .set-switcher-menu {
-    top: auto;
-    right: auto;
-    left: 0;
-    bottom: calc(100% + 0.5rem);
+    right: 0;
+    background:
+      linear-gradient(var(--panel-background), var(--panel-background)),
+      linear-gradient(var(--panel-background), var(--panel-background)),
+      var(--panel-background);
+    box-shadow: 0 0.5rem 1.5rem #0004;
   }
 }
 
