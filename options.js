@@ -96,6 +96,49 @@ function renderSettings() {
   });
 }
 
+// Lets a slider's readout be clicked to type an exact number. get returns
+// the current number, set applies a typed one (already clamped to
+// min..max); Enter or leaving the field applies, Escape cancels.
+function makeValueEditable(readout, { get, set, min, max, label }) {
+  readout.tabIndex = 0;
+  readout.title = `Click to type a value (${min} to ${max})`;
+  const edit = () => {
+    if (readout.querySelector("input")) return;
+    const shown = readout.textContent;
+    const input = document.createElement("input");
+    input.type = "number";
+    input.min = min;
+    input.max = max;
+    input.value = get();
+    input.className = "value-input";
+    input.setAttribute("aria-label", label);
+    readout.textContent = "";
+    readout.appendChild(input);
+    input.focus();
+    input.select();
+
+    let done = false;
+    const finish = (apply) => {
+      if (done) return;
+      done = true;
+      const typed = Number(input.value);
+      readout.textContent = shown;
+      if (apply && input.value !== "" && Number.isFinite(typed)) {
+        set(Math.min(max, Math.max(min, Math.round(typed))));
+      }
+    };
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") finish(true);
+      if (e.key === "Escape") finish(false);
+    });
+    input.addEventListener("blur", () => finish(true));
+  };
+  readout.addEventListener("click", edit);
+  readout.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && e.target === readout) edit();
+  });
+}
+
 function renderScaleValue(id, key) {
   document.getElementById(`${id}-value`).textContent =
     Math.round(meta.settings[key] * 100) + "%";
@@ -753,6 +796,15 @@ function setupLook() {
   document.getElementById("look-tone").addEventListener("input", (e) =>
     updateLook({ tone: Number(e.target.value) }, { debounce: true }),
   );
+  const toneSlider = document.getElementById("look-tone");
+  makeValueEditable(document.getElementById("look-tone-value"), {
+    // Negative is darker, positive lighter, as on the slider
+    get: () => Number(toneSlider.value),
+    set: (tone) => updateLook({ tone }),
+    min: Number(toneSlider.min),
+    max: Number(toneSlider.max),
+    label: "Tone, negative darker and positive lighter",
+  });
   document.getElementById("look-tone-reset").addEventListener("click", () =>
     updateLook({ tone: null }),
   );
@@ -919,6 +971,19 @@ async function init() {
 
     // Debounced while dragging, so the sliders don't burn write quota
     Object.entries(SETTING_SLIDERS).forEach(([id, key]) => {
+      const slider = document.getElementById(id);
+      makeValueEditable(document.getElementById(`${id}-value`), {
+        get: () => Math.round(meta.settings[key] * 100),
+        set: (percent) => {
+          meta.settings[key] = percent / 100;
+          slider.value = meta.settings[key];
+          renderScaleValue(id, key);
+          flushSave();
+        },
+        min: Math.round(slider.min * 100),
+        max: Math.round(slider.max * 100),
+        label: `${slider.labels[0]?.textContent ?? key} size in percent`,
+      });
       document.getElementById(id).addEventListener("input", (e) => {
         meta.settings[key] = parseFloat(e.target.value);
         renderScaleValue(id, key);
