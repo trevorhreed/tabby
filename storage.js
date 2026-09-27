@@ -20,7 +20,7 @@ const defaultSettings = {
   showDate: true,
   showTime: true,
   twelveHourClock: true,
-  showFavicons: true,
+  showFavicons: false,
   showSeconds: true,
   // Size multiplier for both new-tab panels, up to MAX_SCALE
   scale: 1,
