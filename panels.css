@@ -124,7 +124,10 @@ body.no-favicons a.link .favicon {
   zoom: var(--clock-scale);
   /* em, so it tracks the clock's own font size; tighter than the
      default panel padding */
-  padding: 0.5em 0.75em;
+  --clock-pad-y: 0.5em;
+  --clock-pad-x: 0.75em;
+  /* --density comes from the density setting (see the end of this file) */
+  padding: calc(var(--clock-pad-y) * var(--density, 1)) calc(var(--clock-pad-x) * var(--density, 1));
   z-index: 1;
   border-top-right-radius: 0;
   border-bottom-left-radius: 0;
@@ -144,23 +147,53 @@ body.no-favicons a.link .favicon {
 /* Layouts. Corners is the default above: links top-left, clock
    bottom-right, each with its corner against the screen edge squared off. */
 
-/* Center: clock over links in one column in the middle of the screen,
-   squared where they meet so the pair reads as one panel */
-body[data-layout="center"] {
-  display: grid;
-  justify-content: center;
-  align-content: center;
-  grid-template-columns: minmax(0, max-content);
+/* The clock and links are wrapped in .stack. Corners and Dock place each
+   panel on its own, so the wrapper stays out of layout. */
+.stack {
+  display: contents;
+}
 
-  & .clock {
-    position: static;
-    order: -1;
-    text-align: center;
-    border-radius: var(--panel-radius) var(--panel-radius) 0 0;
+/* Center and Sidebar stack the clock over the links in one column. The
+   wrapper becomes the single panel: two touching panels showed a seam of
+   photo between them whenever they landed on fractional pixels (browser
+   zoom, the scaled settings preview, the clock-size slider). */
+body[data-layout="center"],
+body[data-layout="sidebar"] {
+  display: grid;
+
+  & .stack {
+    display: flex;
+    flex-direction: column;
+    max-height: 100%;
+    overflow: auto;
+    background: var(--panel-background);
+    backdrop-filter: blur(var(--panel-blur));
+    box-shadow: var(--panel-line);
   }
 
-  & .link-groups {
-    border-radius: 0 0 var(--panel-radius) var(--panel-radius);
+  & .stack > .panel {
+    /* relative, not static, so the clock's divider positions against it */
+    position: relative;
+    background: none;
+    backdrop-filter: none;
+    box-shadow: none;
+    border-radius: 0;
+    max-height: none;
+    overflow: visible;
+  }
+
+  & .clock {
+    order: -1;
+  }
+}
+
+/* Center: the column sits in the middle of the screen */
+body[data-layout="center"] {
+  justify-content: center;
+  align-content: center;
+
+  & .stack {
+    border-radius: var(--panel-radius);
   }
 }
 
@@ -201,21 +234,12 @@ body[data-layout="dock"] {
   }
 }
 
-/* Sidebar: a full-height column on the left, clock on top of the links */
+/* Sidebar: a full-height column on the left */
 body[data-layout="sidebar"] {
-  display: grid;
   grid-template-columns: minmax(0, max-content);
-  grid-template-rows: auto 1fr;
 
-  & .clock {
-    position: static;
-    order: -1;
-    border-radius: 0 var(--panel-radius) 0 0;
-  }
-
-  & .link-groups {
-    display: block;
-    border-radius: 0 0 var(--panel-radius) 0;
+  & .stack {
+    border-radius: 0 var(--panel-radius) var(--panel-radius) 0;
   }
 }
 
@@ -224,7 +248,8 @@ body[data-layout="sidebar"] {
 body[data-layout="center"],
 body[data-layout="sidebar"] {
   & .clock {
-    padding: 1.25rem 1.5rem 1rem;
+    --clock-pad-y: 1.1rem;
+    --clock-pad-x: 1.5rem;
     text-align: center;
 
     & > span {
@@ -252,32 +277,18 @@ body[data-layout="sidebar"] {
     content: none;
   }
 
-  /* Where the clock meets the links, the two panels' outlines would stack
-     into a full-width rule; outline only the outer sides, and draw the
-     divider inset by the clock's side padding instead */
+  /* Divider between clock and links, inset by the clock's side padding;
+     it follows the edge setting, so it's invisible with no outline */
   & .clock {
-    position: relative;
-    box-shadow:
-      inset var(--panel-line-width) 0 0 var(--panel-line-color),
-      inset calc(-1 * var(--panel-line-width)) 0 0 var(--panel-line-color),
-      inset 0 var(--panel-line-width) 0 var(--panel-line-color);
-
     &::after {
       content: "";
       position: absolute;
-      left: 1.5rem;
-      right: 1.5rem;
+      left: calc(var(--clock-pad-x) * var(--density, 1));
+      right: calc(var(--clock-pad-x) * var(--density, 1));
       bottom: 0;
       height: var(--panel-line-width);
       background: var(--panel-line-color);
     }
-  }
-
-  & .link-groups {
-    box-shadow:
-      inset var(--panel-line-width) 0 0 var(--panel-line-color),
-      inset calc(-1 * var(--panel-line-width)) 0 0 var(--panel-line-color),
-      inset 0 calc(-1 * var(--panel-line-width)) 0 var(--panel-line-color);
   }
 
   & .clock-suffix {
@@ -287,7 +298,16 @@ body[data-layout="sidebar"] {
   }
 }
 
-/* Link density; comfortable is the base spacing above */
+/* Density; comfortable is the base spacing above. --density scales the
+   clock's padding; the links get their own spacing below. */
+body[data-density="compact"] {
+  --density: 0.6;
+}
+
+body[data-density="spacious"] {
+  --density: 1.6;
+}
+
 body[data-density="compact"] .link-groups {
   & a.link {
     padding: 0.25rem 0.6rem;

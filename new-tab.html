@@ -136,8 +136,12 @@
           <circle cx="12" cy="12" r="5.5" stroke-width="3" /></svg
       ></a>
     </div>
-    <section id="link-groups" class="link-groups panel"></section>
-    <section id="clock" class="clock panel"><span></span></section>
+    <!-- Only a box in the layouts that stack the clock over the links; see
+         .stack in panels.css -->
+    <div class="stack">
+      <section id="link-groups" class="link-groups panel"></section>
+      <section id="clock" class="clock panel"><span></span></section>
+    </div>
     <script src="storage.js"></script>
     <script src="render.js"></script>
     <script src="new-tab.js"></script>

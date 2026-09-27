@@ -266,12 +266,13 @@ async function showBackground(imageUrl, look) {
 // both bright and dark photos. corners is in em, so it scales with the panel.
 const LOOK_STYLES = ["auto", "dark", "light", "system"];
 const LOOK_EDGES = ["none", "line"];
-// How much room the links get: padding around each link and space between groups
+// How much room the panels give their content: link padding, space between
+// link groups, and the clock's padding
 const LOOK_DENSITIES = ["compact", "comfortable", "spacious"];
 const LOOK_LAYOUTS = ["corners", "center", "dock", "sidebar"];
 const LOOK_PRESETS = [
   { name: "Clear glass", style: "auto", blur: 6, edge: "line", tone: null, corners: 0.75 },
-  { name: "Frosted", style: "auto", blur: 12, edge: "line", tone: null, corners: 1 },
+  { name: "Frosted", style: "auto", blur: 12, edge: "none", tone: null, corners: 1 },
   { name: "Heavy frost", style: "auto", blur: 24, edge: "none", tone: null, corners: 1 },
   { name: "Smoked", style: "dark", blur: 12, edge: "none", tone: -65, corners: 0.75 },
   { name: "Tinted", style: "dark", blur: 18, edge: "line", tone: -30, corners: 1.5 },

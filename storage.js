@@ -27,7 +27,7 @@ const defaultSettings = {
     layout: "corners",
     style: "auto",
     blur: 12,
-    edge: "line",
+    edge: "none",
     tone: null,
     corners: 1,
     density: "comfortable",
