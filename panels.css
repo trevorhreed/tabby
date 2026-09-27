@@ -349,7 +349,9 @@ body[data-layout="center"] {
   view-transition-name: clock;
 }
 
-.top-controls {
+/* Only named (so only animated) when attaching moves it; otherwise it stays
+   part of the page and simply doesn't change during a layout switch */
+:root.moving-gear .top-controls {
   view-transition-name: controls;
 }
 
