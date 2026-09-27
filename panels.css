@@ -11,9 +11,6 @@
   /* Look settings; render.js's applyLook overrides these */
   --panel-radius: 1em;
   --panel-blur: 0px;
-  --panel-line-color: transparent;
-  --panel-line-width: 1.5px;
-  --panel-line: inset 0 0 0 var(--panel-line-width) var(--panel-line-color);
 }
 
 body {
@@ -57,7 +54,6 @@ body.no-favicons a.link .favicon {
   /* box-shadow: 0 0 1em #000; */
   border-radius: var(--panel-radius);
   backdrop-filter: blur(var(--panel-blur));
-  box-shadow: var(--panel-line);
   padding: calc(1.75rem * var(--density, 1));
   max-height: 100%;
   overflow: auto;
@@ -171,15 +167,14 @@ body[data-layout="center"] {
     border-radius: var(--panel-radius);
     background: var(--panel-background);
     backdrop-filter: blur(var(--panel-blur));
-    box-shadow: var(--panel-line);
   }
 
   & .stack > .panel {
-    /* relative, not static, so the clock's divider positions against it */
+    /* in the column's flow instead of Corners' fixed positions; relative so
+       the footer can reset its corner offsets (see .top-controls below) */
     position: relative;
     background: none;
     backdrop-filter: none;
-    box-shadow: none;
     border-radius: 0;
     max-height: none;
     overflow: visible;
@@ -209,18 +204,6 @@ body[data-layout="center"] {
       display: flex;
       flex-direction: column;
       align-items: center;
-    }
-
-    /* Divider between clock and links, inset by the clock's side padding;
-       it follows the edge setting, so it's invisible with no outline */
-    &::after {
-      content: "";
-      position: absolute;
-      left: calc(var(--clock-pad-x) * var(--density, 1));
-      right: calc(var(--clock-pad-x) * var(--density, 1));
-      bottom: 0;
-      height: var(--panel-line-width);
-      background: var(--panel-line-color);
     }
   }
 

@@ -650,16 +650,18 @@
               <select id="look-style"></select>
             </div>
             <div class="field">
-              <label for="look-blur">Blur</label>
-              <select id="look-blur"></select>
-            </div>
-            <div class="field">
-              <label for="look-edge">Edge</label>
-              <select id="look-edge"></select>
-            </div>
-            <div class="field">
               <label for="look-corners">Corners</label>
               <select id="look-corners"></select>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="look-blur">Blur</label>
+            <div class="field-row">
+              <!-- steps through LOOK_BLURS by index, since the px values aren't evenly spaced -->
+              <input type="range" id="look-blur" min="0" step="1" list="look-blur-stops" />
+              <datalist id="look-blur-stops"></datalist>
+              <span class="value" id="look-blur-value"></span>
             </div>
           </div>
 
