@@ -155,6 +155,18 @@ const getFormattedTime = (settings) => {
   return settings.showDate ? datePart : timePart;
 };
 
+// Chrome's cached icon for a page, via the favicon permission. Sites never
+// visited in this browser come back as a generic globe. Null outside the
+// extension (e.g. the screenshot harness), where _favicon doesn't exist.
+const FAVICON_SIZE_PX = 32;
+function faviconUrl(pageUrl) {
+  if (!chrome.runtime?.getURL) return null;
+  const url = new URL(chrome.runtime.getURL("/_favicon/"));
+  url.searchParams.set("pageUrl", pageUrl);
+  url.searchParams.set("size", FAVICON_SIZE_PX);
+  return url.href;
+}
+
 function renderLinkGroups(groups) {
   const container = document.getElementById("link-groups");
   container.innerHTML = "";
@@ -182,7 +194,15 @@ function renderLinkGroups(groups) {
       const a = document.createElement("a");
       a.className = "link";
       a.href = link.url;
-      a.textContent = link.label;
+      const icon = faviconUrl(link.url);
+      if (icon) {
+        const img = document.createElement("img");
+        img.className = "favicon";
+        img.src = icon;
+        img.alt = "";
+        a.appendChild(img);
+      }
+      a.append(link.label);
       linksDiv.appendChild(a);
     });
 

@@ -4,7 +4,8 @@
   "version": "0.0.3",
   "description": "A beautiful new tab page and link manager with seasonal backgrounds and synchronized data",
   "permissions": [
-    "storage"
+    "storage",
+    "favicon"
   ],
   "chrome_url_overrides": {
     "newtab": "new-tab.html"

@@ -55,6 +55,7 @@ function renderSettings(settings) {
   applyLayout(settings.look.layout);
 
   // The set switcher only affects links, so it hides along with them
+  document.body.classList.toggle("no-favicons", !settings.showFavicons);
   const showLinks = settings.showLinks ? "" : "none";
   document.getElementById("link-groups").style.display = showLinks;
   document.getElementById("set-switcher").style.display = showLinks;

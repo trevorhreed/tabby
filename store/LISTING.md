@@ -68,5 +68,8 @@ English
 ## Privacy Statement
 Tabby stores your links and settings in Chrome's built-in storage. Links and settings sync to your Chrome account through Chrome sync storage; the choice of which link set a device shows is kept in local storage on that device and is never synced. No data is collected, shared, or sent to any external server, and there is no analytics or tracking of any kind.
 
+## Favicon Permission Justification
+Tabby uses the "favicon" permission to show each saved link's site icon next to its name on the new tab page. Icons come from Chrome's own local favicon cache; nothing is fetched from or sent to any external server. Users can turn the icons off in settings.
+
 ## Storage Permission Justification
 Tabby uses the "storage" permission to save your link sets and display settings (date and time visibility, clock format, link and clock scale) in Chrome's sync storage, so they persist between sessions and sync across your devices. It also uses local storage to remember which link set each device shows. No data is sent to external servers; everything stays in Chrome's built-in storage.

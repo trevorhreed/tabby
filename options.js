@@ -71,6 +71,7 @@ function showStatus(message, type, action = null) {
 // Maps settings-checkbox element ids to their settings keys
 const SETTING_CHECKBOXES = {
   "show-links": "showLinks",
+  "show-favicons": "showFavicons",
   "show-date": "showDate",
   "show-time": "showTime",
   "twelve-hour-clock": "twelveHourClock",
