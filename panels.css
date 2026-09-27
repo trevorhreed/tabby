@@ -210,6 +210,20 @@ body[data-layout="center"] {
     }
   }
 
+  /* The link set switcher and gear sit in a footer row of the panel */
+  & .top-controls {
+    order: 1;
+    justify-content: flex-end;
+    padding: calc(0.5rem * var(--density, 1)) calc(1rem * var(--density, 1));
+  }
+
+  /* Open upward: the panel scrolls (overflow: auto), so a menu hanging
+     below it would be clipped */
+  & .set-switcher-menu {
+    top: auto;
+    bottom: calc(100% + 0.5rem);
+  }
+
   & .clock-date {
     font-size: 1.8rem;
     font-weight: 500;

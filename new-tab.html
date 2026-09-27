@@ -124,23 +124,23 @@
     </style>
   </head>
   <body>
-    <div class="top-controls panel">
-      <div id="set-switcher" class="set-switcher">
-        <a id="set-switcher-toggle" class="set-switcher-toggle" title="Link set"></a>
-        <div id="set-switcher-menu" class="set-switcher-menu panel" hidden></div>
-      </div>
-      <a id="settings-link" class="settings-link" title="Options"
-        ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-          <!-- teeth: a thick dashed ring, 8 dashes around r=8 (circumference 16π) -->
-          <circle cx="12" cy="12" r="8" stroke-width="4" stroke-dasharray="3.1416 3.1416" />
-          <circle cx="12" cy="12" r="5.5" stroke-width="3" /></svg
-      ></a>
-    </div>
-    <!-- Only a box in the layouts that stack the clock over the links; see
-         .stack in panels.css -->
+    <!-- Only a box in the Center layout, which puts everything in one panel;
+         see .stack in panels.css -->
     <div class="stack">
       <section id="link-groups" class="link-groups panel"></section>
       <section id="clock" class="clock panel"><span></span></section>
+      <div class="top-controls panel">
+        <div id="set-switcher" class="set-switcher">
+          <a id="set-switcher-toggle" class="set-switcher-toggle" title="Link set"></a>
+          <div id="set-switcher-menu" class="set-switcher-menu panel" hidden></div>
+        </div>
+        <a id="settings-link" class="settings-link" title="Options"
+          ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+            <!-- teeth: a thick dashed ring, 8 dashes around r=8 (circumference 16π) -->
+            <circle cx="12" cy="12" r="8" stroke-width="4" stroke-dasharray="3.1416 3.1416" />
+            <circle cx="12" cy="12" r="5.5" stroke-width="3" /></svg
+        ></a>
+      </div>
     </div>
     <script src="storage.js"></script>
     <script src="render.js"></script>
