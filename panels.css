@@ -9,6 +9,10 @@
   --font-size: 20px;
   --links-scale: 1;
   --clock-scale: 1;
+  /* Look settings; render.js's applyLook overrides these */
+  --panel-radius: 1em;
+  --panel-blur: 0px;
+  --panel-line: none;
 }
 
 body {
@@ -39,7 +43,9 @@ a.link {
 .panel {
   background: var(--panel-background);
   /* box-shadow: 0 0 1em #000; */
-  border-radius: 1em;
+  border-radius: var(--panel-radius);
+  backdrop-filter: blur(var(--panel-blur));
+  box-shadow: var(--panel-line);
   padding: 1rem;
   max-height: 100%;
   overflow: auto;
@@ -114,5 +120,91 @@ a.link {
   & span {
     /* same base size as the links; the clock-scale setting adjusts it */
     font-size: 1rem;
+  }
+}
+
+/* Frostier edge for the "Rim" edge styles: a ring overlaid on each panel
+   (see attachRims in render.js) whose own blur stacks on the panel's */
+.panel-rim {
+  position: fixed;
+  pointer-events: none;
+  z-index: 3;
+}
+
+/* Layouts. Corners is the default above: links top-left, clock
+   bottom-right, each with its corner against the screen edge squared off. */
+
+/* Center: clock over links in one column in the middle of the screen,
+   squared where they meet so the pair reads as one panel */
+body[data-layout="center"] {
+  display: grid;
+  justify-content: center;
+  align-content: center;
+  grid-template-columns: minmax(0, max-content);
+
+  & .clock {
+    position: static;
+    order: -1;
+    text-align: center;
+    border-radius: var(--panel-radius) var(--panel-radius) 0 0;
+  }
+
+  & .link-groups {
+    border-radius: 0 0 var(--panel-radius) var(--panel-radius);
+  }
+}
+
+/* Dock: a large clock in the middle, links in a bar along the bottom */
+body[data-layout="dock"] {
+  & .clock {
+    top: 50%;
+    left: 50%;
+    bottom: auto;
+    right: auto;
+    transform: translate(-50%, -50%);
+    border-radius: var(--panel-radius);
+
+    & span {
+      font-size: 3rem;
+      white-space: nowrap;
+    }
+  }
+
+  & .link-groups {
+    position: fixed;
+    bottom: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 1rem;
+    max-width: calc(100% - 2rem);
+    border-radius: var(--panel-radius);
+
+    & .group,
+    & .group:last-child {
+      margin: 0;
+    }
+
+    & a.link {
+      white-space: nowrap;
+    }
+  }
+}
+
+/* Sidebar: a full-height column on the left, clock on top of the links */
+body[data-layout="sidebar"] {
+  display: grid;
+  grid-template-columns: minmax(0, max-content);
+  grid-template-rows: auto 1fr;
+
+  & .clock {
+    position: static;
+    order: -1;
+    border-radius: 0 var(--panel-radius) 0 0;
+  }
+
+  & .link-groups {
+    display: block;
+    border-radius: 0 0 var(--panel-radius) 0;
   }
 }
