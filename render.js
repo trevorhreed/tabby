@@ -26,6 +26,18 @@ const getSeason = () => {
   return "winter";
 };
 
+const SEASONS = ["spring", "summer", "autumn", "winter", "christmas"];
+
+// Every photo getBackgroundImage can pick, for browsing in the settings preview
+const allBackgroundImages = () =>
+  SEASONS.flatMap((season) => {
+    const maxIndex = season === "christmas" ? MAX_CHRISTMAS_INDEX : MAX_IMAGE_INDEX;
+    return Array.from(
+      { length: maxIndex },
+      (_, i) => `images/${season}/img_${String(i + 1).padStart(2, "0")}.jpg`,
+    );
+  });
+
 const getBackgroundImage = () => {
   const randomCategory = getSeason();
   const maxIndex = randomCategory === "christmas" ? MAX_CHRISTMAS_INDEX : MAX_IMAGE_INDEX;
@@ -251,15 +263,26 @@ function resolveLookStyle(style, rgb) {
   return luminanceOf(rgb) > LIGHT_PANEL_THRESHOLD ? "light" : "dark";
 }
 
-function applyLook(look, rgb) {
+// Panel and text colors (opaque hex) for a look over a photo, plus whether
+// the panel came out light or dark and the tone actually used
+function lookColors(look, rgb) {
   const resolved = resolveLookStyle(look.style, rgb);
   const tone = look.tone ?? DEFAULT_TONE[resolved];
   const amount = Math.abs(tone) / 100;
   const panel = tone >= 0 ? lightenColor(rgb, amount) : darkenColor(rgb, amount);
   const text = resolved === "light" ? darkenColor(rgb, 0.7) : lightenColor(rgb, 0.4);
+  return { panel: rgbToHex(panel), text: rgbToHex(text), resolved, tone };
+}
+
+function applyLayout(layout) {
+  document.body.dataset.layout = layout;
+}
+
+function applyLook(look, rgb) {
+  const colors = lookColors(look, rgb);
   const root = document.documentElement.style;
-  root.setProperty("--panel-background", rgbToHex(panel) + PANEL_ALPHA);
-  root.setProperty("--text", rgbToHex(text));
+  root.setProperty("--panel-background", colors.panel + PANEL_ALPHA);
+  root.setProperty("--text", colors.text);
   root.setProperty("--panel-blur", `${look.blur}px`);
   root.setProperty("--panel-radius", `${look.corners}em`);
   root.setProperty(
@@ -268,7 +291,6 @@ function applyLook(look, rgb) {
       ? `inset 0 0 0 1.5px color-mix(in srgb, var(--text) ${LINE_STRENGTH}, transparent)`
       : "none",
   );
-  document.body.dataset.layout = look.layout;
   setRims(look.edge.startsWith("rim") ? Math.max(MIN_RIM_BLUR_PX, look.blur * 2) : 0);
 }
 

@@ -1,3 +1,17 @@
+// The settings page embeds this page as its live preview (new-tab.html?preview)
+// and drives it with postMessage instead of storage, so edits show before the
+// debounced save lands. Preview → parent: { type: "ready" } once it's
+// listening, then { type: "image", url, rgb } whenever a photo is showing.
+// Parent → preview: { type: "render", settings, groups, setName } and
+// { type: "image", url }.
+// Only when actually framed: opened directly, parent is the page itself and
+// its own messages would loop back
+const PREVIEW =
+  new URLSearchParams(location.search).has("preview") && window.parent !== window;
+
+let currentSettings = null;
+let currentRgb = null;
+
 function initSetSwitcher(setNames, activeSetName) {
   const toggle = document.getElementById("set-switcher-toggle");
   const menu = document.getElementById("set-switcher-menu");
@@ -34,10 +48,60 @@ function initSetSwitcher(setNames, activeSetName) {
   });
 }
 
+// Applies everything settings control; safe to call again with new settings
+function renderSettings(settings) {
+  currentSettings = settings;
+  applyScales(settings);
+  applyLayout(settings.look.layout);
+
+  // The set switcher only affects links, so it hides along with them
+  const showLinks = settings.showLinks ? "" : "none";
+  document.getElementById("link-groups").style.display = showLinks;
+  document.getElementById("set-switcher").style.display = showLinks;
+
+  // The clock panel only shows when at least one of its segments does
+  const clockSection = document.getElementById("clock");
+  clockSection.style.display =
+    settings.showDate || settings.showTime ? "" : "none";
+  updateClock(settings);
+
+  if (currentRgb) applyLook(settings.look, currentRgb);
+}
+
+async function showPhoto(url) {
+  currentRgb = await showBackground(url, currentSettings.look);
+  if (PREVIEW) parent.postMessage({ type: "image", url, rgb: currentRgb }, "*");
+}
+
+function initPreview() {
+  // Look but don't touch: clicks would navigate the frame or open menus
+  document.addEventListener(
+    "click",
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    },
+    true,
+  );
+  window.addEventListener("message", (e) => {
+    if (e.source !== parent) return;
+    const message = e.data;
+    if (message.type === "render") {
+      renderSettings(message.settings);
+      renderLinkGroups(message.groups);
+      document.getElementById("set-switcher-toggle").textContent =
+        message.setName;
+    } else if (message.type === "image") {
+      showPhoto(message.url);
+    }
+  });
+  parent.postMessage({ type: "ready" }, "*");
+}
+
 async function init() {
   const meta = await loadMeta();
-
-  applyScales(meta.settings);
+  renderSettings(meta.settings);
+  setInterval(() => updateClock(currentSettings), 100);
 
   // Settings link
   document.getElementById("settings-link").addEventListener("click", (e) => {
@@ -45,32 +109,15 @@ async function init() {
     chrome.runtime.openOptionsPage();
   });
 
-  // Handle showLinks setting (the set switcher only affects links, so it
-  // hides along with them)
-  const linkGroupsSection = document.getElementById("link-groups");
-  const setSwitcher = document.getElementById("set-switcher");
-  if (!meta.settings.showLinks) {
-    linkGroupsSection.style.display = "none";
-    setSwitcher.style.display = "none";
-  } else {
-    const activeSetName = await getActiveSetName(meta.setNames);
-    renderLinkGroups(await loadSetGroups(activeSetName));
-    initSetSwitcher(meta.setNames, activeSetName);
-  }
+  const activeSetName = await getActiveSetName(meta.setNames);
+  renderLinkGroups(await loadSetGroups(activeSetName));
+  initSetSwitcher(meta.setNames, activeSetName);
 
-  // The clock panel only shows when at least one of its segments does
-  const clockSection = document.getElementById("clock");
-  if (!meta.settings.showDate && !meta.settings.showTime) {
-    clockSection.style.display = "none";
-  } else {
-    updateClock(meta.settings);
-    setInterval(() => updateClock(meta.settings), 100);
-  }
-
-  // Set background image and colors
-  const look = meta.settings.look;
-  const rgb = await showBackground(getBackgroundImage(), look);
-  systemDark.addEventListener("change", () => applyLook(look, rgb));
+  if (PREVIEW) initPreview();
+  await showPhoto(getBackgroundImage());
+  systemDark.addEventListener("change", () => {
+    if (currentRgb) applyLook(currentSettings.look, currentRgb);
+  });
 }
 
 document.addEventListener("DOMContentLoaded", init);
