@@ -43,16 +43,25 @@
         height: 2.5rem;
         width: 2.5rem;
         border-radius: 0.5rem;
-        transition:
-          opacity 0.3s,
-          transform 0.3s;
+        transition: opacity 0.3s;
         font-size: 1.5rem;
         text-decoration: none;
+
+        /* An SVG rather than the ⚙ character: the glyph sits off-center in
+           its line box, so spinning it made it wobble */
+        & svg {
+          width: 1em;
+          height: 1em;
+          transition: transform 0.3s;
+        }
       }
 
       .settings-link:hover {
         opacity: 1;
-        transform: rotate(90deg);
+
+        & svg {
+          transform: rotate(90deg);
+        }
       }
 
       .set-switcher {
@@ -120,7 +129,12 @@
         <a id="set-switcher-toggle" class="set-switcher-toggle" title="Link set"></a>
         <div id="set-switcher-menu" class="set-switcher-menu panel" hidden></div>
       </div>
-      <a id="settings-link" class="settings-link" title="Options">&#9881;</a>
+      <a id="settings-link" class="settings-link" title="Options"
+        ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+          <!-- teeth: a thick dashed ring, 8 dashes around r=8 (circumference 16π) -->
+          <circle cx="12" cy="12" r="8" stroke-width="4" stroke-dasharray="3.1416 3.1416" />
+          <circle cx="12" cy="12" r="5.5" stroke-width="3" /></svg
+      ></a>
     </div>
     <section id="link-groups" class="link-groups panel"></section>
     <section id="clock" class="clock panel"><span></span></section>
