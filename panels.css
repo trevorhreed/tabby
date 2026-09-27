@@ -22,11 +22,26 @@ body {
   color: var(--text);
 }
 
+/* Spacing scale. Every gap below comes from these steps, times Density, so
+   the relationships hold at any density: things that belong together sit
+   closer than things that don't. Defined on body, where the density
+   setting lands, so the calc()s see it (on :root they'd resolve at 1). */
+body {
+  --space-1: calc(0.4rem * var(--density, 1)); /* label to its links */
+  --space-2: calc(0.8rem * var(--density, 1));
+  --space-3: calc(1.2rem * var(--density, 1)); /* panel padding, screen margin */
+  --space-4: calc(2rem * var(--density, 1)); /* group to group */
+  --space-5: calc(3.2rem * var(--density, 1)); /* clock to links */
+  /* A link's own padding (its hover target), part of the text inset */
+  --link-pad-y: calc(0.3rem * var(--density, 1));
+  --link-pad-x: calc(0.45rem * var(--density, 1));
+}
+
 a.link {
   display: inline-block;
   color: var(--text);
   text-decoration: none;
-  padding: calc(0.5rem * var(--density, 1)) calc(1rem * var(--density, 1));
+  padding: var(--link-pad-y) var(--link-pad-x);
   border-radius: 0.5rem;
   transition:
     background-color 0.3s,
@@ -51,87 +66,55 @@ body.no-favicons a.link .favicon {
 
 .panel {
   background: var(--panel-background);
-  /* box-shadow: 0 0 1em #000; */
   border-radius: var(--panel-radius);
   backdrop-filter: blur(var(--panel-blur));
-  padding: calc(1.75rem * var(--density, 1));
+  padding: var(--space-3);
   max-height: 100%;
   overflow: auto;
 }
 
 .link-groups {
-  display: inline-block;
   /* zoom (not transform) so layout and scrolling scale with it */
   zoom: var(--panel-scale);
-  overflow: auto;
-  /* never extend past the viewport; scroll instead */
-  max-height: 100%;
-  max-width: 100%;
   box-sizing: border-box;
-  /* stack above the fixed clock when they overlap */
-  position: relative;
+  /* stack above the clock when they overlap in a small window */
   z-index: 2;
-  border-top-left-radius: 0;
-  border-top-right-radius: 0;
-  border-bottom-left-radius: 0;
 
   & .group {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    margin: 0 0 calc(1.8rem * var(--density, 1));
+    margin-bottom: calc(var(--space-4) - 2 * var(--link-pad-y));
 
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    /* Small caps, lined up with the link text below */
     & label {
-      opacity: 0.6;
-      display: inline;
-      padding: calc(0.5rem * var(--density, 1)) calc(1rem * var(--density, 1));
+      display: block;
+      padding: 0 var(--link-pad-x);
+      margin-bottom: calc(var(--space-1) - var(--link-pad-y));
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      opacity: 0.75;
       color: var(--text);
-      border-top-left-radius: 0.5rem;
-      border-top-right-radius: 0.5rem;
     }
 
     & .links {
       display: flex;
-      flex-direction: row;
-      gap: calc(0.5rem * var(--density, 1));
-      border-top-right-radius: 0.5rem;
-      border-bottom-left-radius: 0.5rem;
-      border-bottom-right-radius: 0.5rem;
-
-      & a {
-        display: inline-block;
-        color: var(--text);
-        text-decoration: none;
-        cursor: pointer;
-      }
-    }
-
-    &:last-child {
-      margin: 0 0 calc(0.5rem * var(--density, 1));
+      flex-wrap: wrap;
+      /* about 1.2rem between one link's text and the next */
+      column-gap: calc(1.2rem * var(--density, 1) - 2 * var(--link-pad-x));
     }
   }
 }
 
 .clock {
-  position: fixed;
-  bottom: 0rem;
-  right: 0rem;
   zoom: var(--panel-scale);
-  /* Matches the links panel: its padding vertically, and its text inset
-     (panel padding plus link padding) horizontally, so the two panels read
-     as a set. --density comes from the density setting (end of file). */
-  --clock-pad-y: 1.25rem;
-  --clock-pad-x: 2.75rem;
-  padding: calc(var(--clock-pad-y) * var(--density, 1)) calc(var(--clock-pad-x) * var(--density, 1));
   z-index: 1;
-  border-top-right-radius: 0;
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
-
-  & > span {
-    /* the size setting multiplies this */
-    font-size: 3.2rem;
-  }
 
   /* Inline style: date and time on one line with a bullet between */
   & .clock-date + .clock-time::before {
@@ -139,8 +122,9 @@ body.no-favicons a.link .favicon {
   }
 }
 
-/* Layouts. Corners is the default above: links top-left, clock
-   bottom-right, each with its corner against the screen edge squared off. */
+.clock-time {
+  font-variant-numeric: tabular-nums;
+}
 
 /* The clock and links are wrapped in .stack. Corners places each panel on
    its own, so the wrapper stays out of layout. */
@@ -148,20 +132,71 @@ body.no-favicons a.link .favicon {
   display: contents;
 }
 
-/* Center: the clock over the links in one column in the middle of the
-   screen. The wrapper becomes the single panel: two touching panels showed
-   a seam of photo between them whenever they landed on fractional pixels
-   (browser zoom, the scaled settings preview, the size slider). */
+/* Corners: links top-left, a quiet one-line clock bottom-right, and the
+   controls top-right, each floating a screen margin in from the edges */
+body[data-layout="corners"] {
+  & .link-groups {
+    position: fixed;
+    top: var(--space-3);
+    left: var(--space-3);
+    max-width: calc((100vw - 2 * var(--space-3)) / var(--panel-scale));
+    max-height: calc((100vh - 2 * var(--space-3)) / var(--panel-scale));
+  }
+
+  & .clock {
+    position: fixed;
+    right: var(--space-3);
+    bottom: var(--space-3);
+    padding: var(--space-2) var(--space-3);
+
+    & > span {
+      font-size: 2rem;
+      font-weight: 300;
+    }
+  }
+
+  & .top-controls {
+    position: fixed;
+    top: var(--space-3);
+    right: var(--space-3);
+  }
+}
+
+/* Where the controls sit on the photo itself (Corners, or nothing else
+   shown), they get a small frosted backing: bare glyphs vanished on bright
+   photos */
+body[data-layout="corners"] .top-controls,
+body.nothing-shown .top-controls {
+  padding: 0.25rem;
+  border-radius: min(var(--panel-radius), 1rem);
+  background: var(--panel-background);
+  backdrop-filter: blur(var(--panel-blur));
+  filter: none;
+}
+
+/* Center: clock over links in one panel in the middle of the screen. The
+   wrapper becomes the single panel: two touching panels showed a seam of
+   photo between them whenever they landed on fractional pixels (browser
+   zoom, the scaled settings preview, the size slider). */
 body[data-layout="center"] {
+  /* the links' text inset from the panel edge; the clock and footer line up
+     with it */
+  --inset: calc(var(--space-4) + var(--link-pad-x));
+
   display: grid;
   justify-content: center;
   align-content: center;
   /* keeps the panel off the window's edges when it's as tall as the window */
-  padding: calc(2rem * var(--density, 1));
+  padding: var(--space-3);
 
   & .stack {
+    position: relative;
     display: flex;
     flex-direction: column;
+    /* steady width, so toggling seconds, date or links doesn't resize the
+       panel (or make the layout animation lurch) */
+    min-width: calc(26rem * var(--panel-scale));
+    max-width: calc(100vw - 2 * var(--space-3));
     max-height: 100%;
     /* when the panel is taller than the window, only the links scroll, so
        the clock and the footer controls stay in view */
@@ -172,8 +207,6 @@ body[data-layout="center"] {
   }
 
   & .stack > .panel {
-    /* in the column's flow instead of Corners' fixed positions; relative so
-       the footer can reset its corner offsets (see .top-controls below) */
     position: relative;
     background: none;
     backdrop-filter: none;
@@ -184,11 +217,15 @@ body[data-layout="center"] {
 
   /* .stack > so it outranks the .stack > .panel reset above */
   & .stack > .link-groups {
-    /* roomier than Corners' panels, which hug the screen edges */
-    padding: calc(2.5rem * var(--density, 1));
+    padding: var(--space-5) var(--space-4) var(--space-4);
     flex: 1 1 auto;
     min-height: 0;
     overflow: auto;
+  }
+
+  /* Without the clock above, the links open the panel */
+  &.no-clock .stack > .link-groups {
+    padding-top: var(--space-4);
   }
 
   /* Only the links give up height; the clock and footer keep theirs */
@@ -197,47 +234,17 @@ body[data-layout="center"] {
     flex-shrink: 0;
   }
 
-  /* Lock-screen clock: the date on its own line above a large, light time */
+  /* Lock-screen clock: the date on its own line above a large, light time,
+     left-aligned with the links so the panel reads as one card */
   & .clock {
     order: -1;
-    /* x matches the links' text inset, so the divider lines up with them */
-    --clock-pad-y: 2.5rem;
-    --clock-pad-x: 3.5rem;
-    text-align: center;
+    padding: var(--space-4) var(--inset) 0;
 
     & > span {
       display: flex;
       flex-direction: column;
-      align-items: center;
+      align-items: flex-start;
     }
-  }
-
-  /* The link set switcher and gear sit in a footer row of the panel,
-     right-aligned, with the gear's glyph roughly in line with the right
-     edge of the clock and links */
-  & .top-controls {
-    order: 1;
-    /* drop the corner offsets new-tab.html gives it for Corners; with
-       position: relative they'd push it down past the panel's edge */
-    inset: auto;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: calc(0.25rem * var(--density, 1));
-    /* the buttons' own boxes add about 0.5rem around their glyphs, so this
-       leaves the same visual gap below the gear as above the date */
-    padding: 0 calc(2.75rem * var(--density, 1)) calc(2.25rem * var(--density, 1));
-
-    & .set-switcher-toggle {
-      padding: 0 0.5rem;
-    }
-  }
-
-  /* Open upward: the panel clips its overflow, so a menu hanging below it
-     would be cut off */
-  & .set-switcher-menu {
-    top: auto;
-    bottom: calc(100% + 0.5rem);
   }
 
   & .clock-date {
@@ -246,12 +253,20 @@ body[data-layout="center"] {
     opacity: 0.85;
   }
 
+  /* With the time hidden, the date takes its place */
+  & .clock-date:only-child {
+    font-size: 3.2rem;
+    font-weight: 300;
+    opacity: 1;
+  }
+
   & .clock-time {
     font-size: 7rem;
     font-weight: 200;
     line-height: 1;
     letter-spacing: -0.02em;
-    font-variant-numeric: tabular-nums;
+    /* the numerals' side bearing, so the digit edge meets the text inset */
+    margin-left: -0.05em;
   }
 
   & .clock-date + .clock-time::before {
@@ -262,6 +277,56 @@ body[data-layout="center"] {
     font-size: 0.3em;
     font-weight: 500;
     letter-spacing: 0.05em;
+  }
+
+  /* Footer row: set switcher on the left under the links, gear on the right */
+  & .top-controls {
+    order: 1;
+    padding: 0 calc(var(--inset) - 0.5rem) calc(var(--space-4) - 0.5rem);
+    padding-left: calc(var(--inset) - var(--switcher-pad-x));
+  }
+
+  /* No links: nothing to switch, so the gear tucks into the panel's top
+     right corner instead of sitting alone under the clock */
+  &.no-links .top-controls {
+    position: absolute;
+    top: calc(var(--space-4) - 0.5rem);
+    right: calc(var(--inset) - 0.5rem);
+    padding: 0;
+  }
+
+  &.no-links .clock {
+    padding-bottom: var(--space-4);
+  }
+
+  /* Open upward: the panel clips its overflow, so a menu hanging below it
+     would be cut off */
+  & .set-switcher-menu {
+    top: auto;
+    right: auto;
+    left: 0;
+    bottom: calc(100% + 0.5rem);
+  }
+}
+
+/* Nothing to show (no links, no clock): no panel at all, just a dim gear in
+   the top-right corner that brightens on hover */
+body.nothing-shown {
+  & .stack {
+    display: contents;
+  }
+
+  & .top-controls {
+    position: fixed;
+    top: var(--space-3);
+    right: var(--space-3);
+    padding: 0;
+    opacity: 0.6;
+    transition: opacity 0.3s;
+
+    &:hover {
+      opacity: 1;
+    }
   }
 }
 
@@ -303,8 +368,7 @@ body[data-layout="center"] {
    apply it themselves; otherwise the panels would lose their frost for the
    length of the move */
 ::view-transition-group(panel),
-::view-transition-group(clock),
-::view-transition-group(controls) {
+::view-transition-group(clock) {
   backdrop-filter: blur(var(--panel-blur));
   border-radius: var(--panel-radius);
   overflow: hidden;
