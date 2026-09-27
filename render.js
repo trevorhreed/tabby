@@ -136,9 +136,9 @@ const LONG_DATE = new Intl.DateTimeFormat(undefined, {
   month: "long",
   day: "numeric",
 });
-// Layouts where the clock is a centerpiece show it lock-screen style: the
+// Layouts where the clock heads the links show it lock-screen style: the
 // date on its own line above a large time
-const STACKED_CLOCK_LAYOUTS = ["center", "sidebar", "dock"];
+const STACKED_CLOCK_LAYOUTS = ["center"];
 
 // The clock's date and time as separate strings; the stacked style gets the
 // spelled-out date, the inline style the short one
@@ -266,7 +266,7 @@ const LOOK_EDGES = ["none", "line"];
 // How much room the panels give their content: link padding, space between
 // link groups, and the clock's padding
 const LOOK_DENSITIES = ["compact", "comfortable", "spacious"];
-const LOOK_LAYOUTS = ["corners", "center", "dock", "sidebar"];
+const LOOK_LAYOUTS = ["corners", "center"];
 const LOOK_PRESETS = [
   { name: "Clear glass", style: "auto", blur: 6, edge: "line", corners: 0.75 },
   { name: "Frosted", style: "auto", blur: 12, edge: "none", corners: 1 },

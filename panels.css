@@ -146,25 +146,27 @@ body.no-favicons a.link .favicon {
 /* Layouts. Corners is the default above: links top-left, clock
    bottom-right, each with its corner against the screen edge squared off. */
 
-/* The clock and links are wrapped in .stack. Corners and Dock place each
-   panel on its own, so the wrapper stays out of layout. */
+/* The clock and links are wrapped in .stack. Corners places each panel on
+   its own, so the wrapper stays out of layout. */
 .stack {
   display: contents;
 }
 
-/* Center and Sidebar stack the clock over the links in one column. The
-   wrapper becomes the single panel: two touching panels showed a seam of
-   photo between them whenever they landed on fractional pixels (browser
-   zoom, the scaled settings preview, the clock-size slider). */
-body[data-layout="center"],
-body[data-layout="sidebar"] {
+/* Center: the clock over the links in one column in the middle of the
+   screen. The wrapper becomes the single panel: two touching panels showed
+   a seam of photo between them whenever they landed on fractional pixels
+   (browser zoom, the scaled settings preview, the size slider). */
+body[data-layout="center"] {
   display: grid;
+  justify-content: center;
+  align-content: center;
 
   & .stack {
     display: flex;
     flex-direction: column;
     max-height: 100%;
     overflow: auto;
+    border-radius: var(--panel-radius);
     background: var(--panel-background);
     backdrop-filter: blur(var(--panel-blur));
     box-shadow: var(--panel-line);
@@ -181,72 +183,9 @@ body[data-layout="sidebar"] {
     overflow: visible;
   }
 
+  /* Lock-screen clock: the date on its own line above a large, light time */
   & .clock {
     order: -1;
-  }
-}
-
-/* Center: the column sits in the middle of the screen */
-body[data-layout="center"] {
-  justify-content: center;
-  align-content: center;
-
-  & .stack {
-    border-radius: var(--panel-radius);
-  }
-}
-
-/* Dock: a large clock in the middle, links in a bar along the bottom */
-body[data-layout="dock"] {
-  & .clock {
-    top: 50%;
-    left: 50%;
-    bottom: auto;
-    right: auto;
-    transform: translate(-50%, -50%);
-    border-radius: var(--panel-radius);
-
-    & > span {
-      white-space: nowrap;
-    }
-  }
-
-  & .link-groups {
-    position: fixed;
-    bottom: 1rem;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    gap: 1rem;
-    max-width: calc(100% - 2rem);
-    border-radius: var(--panel-radius);
-
-    & .group,
-    & .group:last-child {
-      margin: 0;
-    }
-
-    & a.link {
-      white-space: nowrap;
-    }
-  }
-}
-
-/* Sidebar: a full-height column on the left */
-body[data-layout="sidebar"] {
-  grid-template-columns: minmax(0, max-content);
-
-  & .stack {
-    border-radius: 0 var(--panel-radius) var(--panel-radius) 0;
-  }
-}
-
-/* Lock-screen clock for the layouts where the clock is a centerpiece: the
-   date on its own line above a large, light time */
-body[data-layout="center"],
-body[data-layout="sidebar"],
-body[data-layout="dock"] {
-  & .clock {
     /* x matches the links' text inset, so the divider lines up with them */
     --clock-pad-y: 1.1rem;
     --clock-pad-x: 2rem;
@@ -256,6 +195,18 @@ body[data-layout="dock"] {
       display: flex;
       flex-direction: column;
       align-items: center;
+    }
+
+    /* Divider between clock and links, inset by the clock's side padding;
+       it follows the edge setting, so it's invisible with no outline */
+    &::after {
+      content: "";
+      position: absolute;
+      left: calc(var(--clock-pad-x) * var(--density, 1));
+      right: calc(var(--clock-pad-x) * var(--density, 1));
+      bottom: 0;
+      height: var(--panel-line-width);
+      background: var(--panel-line-color);
     }
   }
 
@@ -281,22 +232,6 @@ body[data-layout="dock"] {
     font-size: 0.3em;
     font-weight: 500;
     letter-spacing: 0.05em;
-  }
-}
-
-/* Divider between clock and links in the stacked layouts, inset by the
-   clock's side padding; it follows the edge setting, so it's invisible with
-   no outline */
-body[data-layout="center"],
-body[data-layout="sidebar"] {
-  & .clock::after {
-    content: "";
-    position: absolute;
-    left: calc(var(--clock-pad-x) * var(--density, 1));
-    right: calc(var(--clock-pad-x) * var(--density, 1));
-    bottom: 0;
-    height: var(--panel-line-width);
-    background: var(--panel-line-color);
   }
 }
 

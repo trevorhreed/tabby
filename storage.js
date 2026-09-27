@@ -83,6 +83,13 @@ const setKey = (name) => SYNC_SET_PREFIX + name;
 // page saves meta + set on every change).
 let usingUnsavedDefaults = false;
 
+// Dock and Sidebar were layouts briefly: Dock stacked a big clock over its
+// links like Center does, and Sidebar kept the links on the left like
+// Corners. Returns the replacement, or nothing for a current layout.
+const RETIRED_LAYOUTS = { dock: "center", sidebar: "corners" };
+const keptLayout = (layout) =>
+  RETIRED_LAYOUTS[layout] ? { layout: RETIRED_LAYOUTS[layout] } : {};
+
 const backfillSettings = (meta) => {
   const stored = meta.settings ?? {};
   // Backfill settings added after the meta was first written; look is merged
@@ -93,7 +100,7 @@ const backfillSettings = (meta) => {
   meta.settings = {
     ...defaultSettings,
     ...current,
-    look: { ...defaultSettings.look, ...storedLook },
+    look: { ...defaultSettings.look, ...storedLook, ...keptLayout(storedLook.layout) },
     // Links and clock used to have separate sizes; the links size carries
     // over as the shared one
     scale: stored.scale ?? linksScale ?? defaultSettings.scale,
