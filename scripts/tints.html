@@ -1,0 +1,21 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Build tints</title>
+  </head>
+  <body>
+    <!-- Driven by build-tints.sh: averages each image listed in the URL hash
+         with the extension's own code and writes the result as JSON below. -->
+    <pre id="tints"></pre>
+    <script src="../render.js"></script>
+    <script>
+      const paths = decodeURIComponent(location.hash.slice(1)).split(",");
+      Promise.all(paths.map((path) => averageImageColor(`../${path}`).then((rgb) => [path, rgb]))).then(
+        (entries) => {
+          document.getElementById("tints").textContent = JSON.stringify(Object.fromEntries(entries));
+        },
+      );
+    </script>
+  </body>
+</html>

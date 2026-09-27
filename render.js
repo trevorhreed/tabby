@@ -54,7 +54,9 @@ const darkenColor = ({ red, green, blue }, factor) => ({
   blue: Math.max(0, Math.round(blue * (1 - factor))),
 });
 
-const getColorsFromImage = async (imageUrl) => {
+// Average color of every pixel in the photo; tintColors turns it into the
+// panel palette.
+const averageImageColor = (imageUrl) => {
   return new Promise((resolve) => {
     const img = new Image();
     img.crossOrigin = "Anonymous";
@@ -74,19 +76,33 @@ const getColorsFromImage = async (imageUrl) => {
       }
 
       const pixelCount = data.length / 4;
-      const rgb = {
+      resolve({
         red: Math.round(color.red / pixelCount),
         green: Math.round(color.green / pixelCount),
         blue: Math.round(color.blue / pixelCount),
-      };
-
-      resolve({
-        light: rgbToHex(lightenColor(rgb, 0.4)),
-        dark: rgbToHex(darkenColor(rgb, 0.6)),
       });
     };
     img.src = imageUrl;
   });
+};
+
+const tintColors = (rgb) => ({
+  light: rgbToHex(lightenColor(rgb, 0.4)),
+  dark: rgbToHex(darkenColor(rgb, 0.6)),
+});
+
+// Average colors generated at publish time (scripts/build-tints.sh), keyed by
+// image path. Absent in an unpacked dev checkout, where every photo falls
+// back to averaging at runtime.
+const TINTS_URL = "tints.json";
+let precomputedTints;
+const loadPrecomputedTints = async () => {
+  if (!precomputedTints) {
+    precomputedTints = fetch(TINTS_URL)
+      .then((response) => (response.ok ? response.json() : {}))
+      .catch(() => ({}));
+  }
+  return precomputedTints;
 };
 
 const setTextColor = (color, property) => {
@@ -186,8 +202,13 @@ function applyScales(settings) {
 }
 
 async function showBackground(imageUrl) {
-  setBackgroundImage(imageUrl);
-  const color = await getColorsFromImage(imageUrl);
+  const known = (await loadPrecomputedTints())[imageUrl];
+  // Without a precomputed tint, show the photo while it's averaged; with
+  // one, tint and photo land together so the panels never flash the
+  // default colors
+  if (!known) setBackgroundImage(imageUrl);
+  const color = tintColors(known ?? (await averageImageColor(imageUrl)));
   setTextColor(color.light, "--text");
   setTextColor(color.dark + "dd", "--panel-background");
+  setBackgroundImage(imageUrl);
 }

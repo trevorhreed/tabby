@@ -27,6 +27,9 @@ jobs:
           jq --arg v "$NEW_VERSION" '.version = $v' manifest.json > manifest.tmp && mv manifest.tmp manifest.json
           echo "Version: $VERSION -> $NEW_VERSION"
 
+      - name: Precompute wallpaper tints
+        run: sh scripts/build-tints.sh
+
       - name: Create ZIP package
         run: |
           zip -r extension.zip . \
@@ -34,7 +37,8 @@ jobs:
             -x ".github/*" \
             -x ".gitignore" \
             -x ".DS_Store" \
-            -x "store/*"
+            -x "store/*" \
+            -x "scripts/*"
 
       - name: Upload and publish
         run: npx -y chrome-webstore-upload-cli@3.5.0 upload --source extension.zip --auto-publish --max-await-in-progress 300
