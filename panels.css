@@ -210,11 +210,16 @@ body[data-layout="center"] {
     }
   }
 
-  /* The link set switcher and gear sit in a footer row of the panel */
+  /* The link set switcher and gear sit in a footer row of the panel,
+     right-aligned, with the gear's glyph roughly in line with the right
+     edge of the clock and links */
   & .top-controls {
     order: 1;
+    display: flex;
+    align-items: center;
     justify-content: flex-end;
-    padding: calc(0.5rem * var(--density, 1)) calc(1rem * var(--density, 1));
+    gap: calc(0.25rem * var(--density, 1));
+    padding: 0 calc(1.25rem * var(--density, 1)) calc(1rem * var(--density, 1));
   }
 
   /* Open upward: the panel scrolls (overflow: auto), so a menu hanging
