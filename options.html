@@ -296,8 +296,9 @@
         font-weight: 600;
       }
 
+      /* Fixed width so every slider in the drawer is the same length */
       .value {
-        min-width: 7.5em;
+        flex: 0 0 10.5em;
         text-align: right;
         font-variant-numeric: tabular-nums;
         color: var(--ink-muted);
@@ -336,9 +337,21 @@
         border-color: var(--danger);
       }
 
-      .btn[hidden] {
-        visibility: hidden;
-        display: inline-block;
+      .field-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        color: var(--ink-muted);
+        font-size: 12px;
+      }
+
+      .field-head .link-add {
+        font-size: 12px;
+        padding: 0;
+      }
+
+      .field-head [hidden] {
+        display: none;
       }
 
       /* Small icon buttons on each row, shown on hover so the list stays calm */
@@ -649,27 +662,21 @@
           </div>
 
           <div class="field">
-            <label for="look-tone">Tone</label>
+            <div class="field-head">
+              <label for="look-tone">Tone</label>
+              <button class="link-add" id="look-tone-reset" title="Back to the style's default tone" hidden>↺ Reset</button>
+            </div>
             <div class="field-row">
               <input type="range" id="look-tone" min="-90" max="90" step="5" />
               <span class="value" id="look-tone-value"></span>
-              <button class="btn" id="look-tone-reset" title="Back to the style's default tone" hidden>↺</button>
             </div>
           </div>
 
-          <h2>Size</h2>
           <div class="field">
-            <label for="links-scale">Links</label>
+            <label for="panel-scale">Size</label>
             <div class="field-row">
-              <input type="range" id="links-scale" min="0.25" max="8" step="0.05" />
-              <span class="value" id="links-scale-value"></span>
-            </div>
-          </div>
-          <div class="field">
-            <label for="clock-scale">Clock</label>
-            <div class="field-row">
-              <input type="range" id="clock-scale" min="0.25" max="8" step="0.05" />
-              <span class="value" id="clock-scale-value"></span>
+              <input type="range" id="panel-scale" min="0.25" max="8" step="0.05" />
+              <span class="value" id="panel-scale-value"></span>
             </div>
           </div>
 

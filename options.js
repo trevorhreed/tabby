@@ -81,8 +81,7 @@ const SETTING_CHECKBOXES = {
 // Maps settings-slider element ids to their settings keys; each slider has
 // a matching "<id>-value" percentage readout
 const SETTING_SLIDERS = {
-  "links-scale": "linksScale",
-  "clock-scale": "clockScale",
+  "panel-scale": "scale",
 };
 
 function renderSettings() {

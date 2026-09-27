@@ -240,10 +240,9 @@ function updateClock(settings) {
   if (clockSpan.innerHTML !== html) clockSpan.innerHTML = html;
 }
 
-// Each panel zooms independently off its own multiplier
+// Both panels zoom off one multiplier so they stay in proportion
 function applyScales(settings) {
-  document.documentElement.style.setProperty("--links-scale", settings.linksScale);
-  document.documentElement.style.setProperty("--clock-scale", settings.clockScale);
+  document.documentElement.style.setProperty("--panel-scale", settings.scale);
 }
 
 // Shows the photo with the panels styled to match; resolves to the photo's

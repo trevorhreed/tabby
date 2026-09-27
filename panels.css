@@ -7,8 +7,7 @@
   --text-hover: #ccc3;
   --panel-background: #000c;
   --font-size: 20px;
-  --links-scale: 1;
-  --clock-scale: 1;
+  --panel-scale: 1;
   /* Look settings; render.js's applyLook overrides these */
   --panel-radius: 1em;
   --panel-blur: 0px;
@@ -67,7 +66,7 @@ body.no-favicons a.link .favicon {
 .link-groups {
   display: inline-block;
   /* zoom (not transform) so layout and scrolling scale with it */
-  zoom: var(--links-scale);
+  zoom: var(--panel-scale);
   overflow: auto;
   /* never extend past the viewport; scroll instead */
   max-height: 100%;
@@ -121,7 +120,7 @@ body.no-favicons a.link .favicon {
   position: fixed;
   bottom: 0rem;
   right: 0rem;
-  zoom: var(--clock-scale);
+  zoom: var(--panel-scale);
   /* Matches the links panel: its padding vertically, and its text inset
      (panel padding plus link padding) horizontally, so the two panels read
      as a set. --density comes from the density setting (end of file). */
@@ -134,7 +133,7 @@ body.no-favicons a.link .favicon {
   border-bottom-right-radius: 0;
 
   & > span {
-    /* the clock-scale setting multiplies this */
+    /* the size setting multiplies this */
     font-size: 1.6rem;
   }
 

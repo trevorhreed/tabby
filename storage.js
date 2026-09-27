@@ -19,9 +19,8 @@ const defaultSettings = {
   twelveHourClock: true,
   showFavicons: true,
   showSeconds: true,
-  // Independent size multipliers for the two new-tab panels
-  linksScale: 1,
-  clockScale: 1,
+  // Size multiplier for both new-tab panels
+  scale: 1,
   // Panel look; the Frosted preset (see LOOK_PRESETS in render.js)
   look: {
     layout: "corners",
@@ -86,12 +85,17 @@ const setKey = (name) => SYNC_SET_PREFIX + name;
 let usingUnsavedDefaults = false;
 
 const backfillSettings = (meta) => {
+  const stored = meta.settings ?? {};
   // Backfill settings added after the meta was first written; look is merged
   // a level deeper so newly added look fields get defaults too
+  const { linksScale, clockScale, ...current } = stored;
   meta.settings = {
     ...defaultSettings,
-    ...meta.settings,
-    look: { ...defaultSettings.look, ...meta.settings?.look },
+    ...current,
+    look: { ...defaultSettings.look, ...stored.look },
+    // Links and clock used to have separate sizes; the links size carries
+    // over as the shared one
+    scale: stored.scale ?? linksScale ?? defaultSettings.scale,
   };
   return meta;
 };
