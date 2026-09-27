@@ -647,7 +647,7 @@ async function importAllData(data) {
 // ---- Look ----
 
 const STYLE_LABELS = { auto: "Auto", dark: "Dark", light: "Light", system: "System" };
-const EDGE_LABELS = { none: "None", line: "Line", rim: "Frosted rim", "rim-line": "Rim + line" };
+const EDGE_LABELS = { none: "None", line: "Line" };
 const BLURS_PX = [0, 6, 12, 18, 24, 36, 48, 72];
 const CORNERS = [
   [0, "Square"],
@@ -679,6 +679,9 @@ function renderLook() {
   const look = meta.settings.look;
   document.querySelectorAll("#look-layout button").forEach((button) => {
     button.setAttribute("aria-pressed", button.dataset.layout === look.layout);
+  });
+  document.querySelectorAll("#look-density button").forEach((button) => {
+    button.setAttribute("aria-pressed", button.dataset.density === look.density);
   });
   document.getElementById("look-preset").value = matchingPreset(look)?.name ?? CUSTOM_PRESET;
   document.getElementById("look-style").value = look.style;
@@ -723,6 +726,10 @@ function setupLook() {
   document.getElementById("look-layout").addEventListener("click", (e) => {
     const layout = e.target.closest("button")?.dataset.layout;
     if (layout) updateLook({ layout });
+  });
+  document.getElementById("look-density").addEventListener("click", (e) => {
+    const density = e.target.closest("button")?.dataset.density;
+    if (density) updateLook({ density });
   });
   document.getElementById("look-preset").addEventListener("change", (e) => {
     const preset = LOOK_PRESETS.find((p) => p.name === e.target.value);
@@ -775,7 +782,13 @@ const previewFrame = () => document.getElementById("preview");
 
 function sendPreview() {
   previewFrame().contentWindow?.postMessage(
-    { type: "render", settings: meta.settings, groups: editingGroups, setName: editingSetName },
+    {
+      type: "render",
+      settings: meta.settings,
+      groups: editingGroups,
+      setName: editingSetName,
+      setCount: meta.setNames.length,
+    },
     "*",
   );
 }

@@ -265,18 +265,20 @@ async function showBackground(imageUrl, look) {
 // null means the style's default, which keeps Auto and System readable on
 // both bright and dark photos. corners is in em, so it scales with the panel.
 const LOOK_STYLES = ["auto", "dark", "light", "system"];
-const LOOK_EDGES = ["none", "line", "rim", "rim-line"];
+const LOOK_EDGES = ["none", "line"];
+// How much room the links get: padding around each link and space between groups
+const LOOK_DENSITIES = ["compact", "comfortable", "spacious"];
 const LOOK_LAYOUTS = ["corners", "center", "dock", "sidebar"];
 const LOOK_PRESETS = [
   { name: "Clear glass", style: "auto", blur: 6, edge: "line", tone: null, corners: 0.75 },
-  { name: "Frosted", style: "auto", blur: 12, edge: "rim-line", tone: null, corners: 1 },
-  { name: "Heavy frost", style: "auto", blur: 24, edge: "rim", tone: null, corners: 1 },
+  { name: "Frosted", style: "auto", blur: 12, edge: "line", tone: null, corners: 1 },
+  { name: "Heavy frost", style: "auto", blur: 24, edge: "none", tone: null, corners: 1 },
   { name: "Smoked", style: "dark", blur: 12, edge: "none", tone: -65, corners: 0.75 },
-  { name: "Tinted", style: "dark", blur: 18, edge: "rim-line", tone: -30, corners: 1.5 },
+  { name: "Tinted", style: "dark", blur: 18, edge: "line", tone: -30, corners: 1.5 },
   { name: "Milk glass", style: "light", blur: 18, edge: "line", tone: 70, corners: 1 },
   { name: "Square", style: "auto", blur: 6, edge: "none", tone: null, corners: 0 },
   { name: "Pill", style: "auto", blur: 12, edge: "line", tone: null, corners: 2 },
-  { name: "Follow system", style: "system", blur: 12, edge: "rim-line", tone: null, corners: 1 },
+  { name: "Follow system", style: "system", blur: 12, edge: "line", tone: null, corners: 1 },
 ];
 // Relative luminance above this means the photo is bright enough that a
 // light panel with dark text reads better than the usual dark panel
@@ -284,9 +286,6 @@ const LIGHT_PANEL_THRESHOLD = 0.45;
 const DEFAULT_TONE = { dark: -50, light: 60 };
 const PANEL_ALPHA = "aa";
 const LINE_STRENGTH = "45%";
-const RIM_WIDTH_PX = 8;
-// The rim's blur stacks on the panel's; with no panel blur it needs its own
-const MIN_RIM_BLUR_PX = 12;
 
 const systemDark = window.matchMedia("(prefers-color-scheme: dark)");
 
@@ -316,8 +315,9 @@ function lookColors(look, rgb) {
   return { panel: rgbToHex(panel), text: rgbToHex(text), resolved, tone };
 }
 
-function applyLayout(layout) {
-  document.body.dataset.layout = layout;
+function applyLayout(look) {
+  document.body.dataset.layout = look.layout;
+  document.body.dataset.density = look.density;
 }
 
 function applyLook(look, rgb) {
@@ -333,66 +333,4 @@ function applyLook(look, rgb) {
       ? `inset 0 0 0 1.5px color-mix(in srgb, var(--text) ${LINE_STRENGTH}, transparent)`
       : "none",
   );
-  setRims(look.edge.startsWith("rim") ? Math.max(MIN_RIM_BLUR_PX, look.blur * 2) : 0);
 }
-
-// Builds an SVG path for a rectangle with per-corner radii
-function roundedRectPath(x, y, w, h, [tl, tr, br, bl]) {
-  return (
-    `M${x + tl},${y} H${x + w - tr} A${tr},${tr} 0 0 1 ${x + w},${y + tr} ` +
-    `V${y + h - br} A${br},${br} 0 0 1 ${x + w - br},${y + h} ` +
-    `H${x + bl} A${bl},${bl} 0 0 1 ${x},${y + h - bl} V${y + tl} A${tl},${tl} 0 0 1 ${x + tl},${y} Z`
-  );
-}
-
-// A mask would stop backdrop-filter from blurring, so each rim is a separate
-// fixed element cut to a ring with an evenodd clip-path, tracking its panel's
-// box and corner radii. Panels themselves can't hold the rim: an element with
-// backdrop-filter hides the photo from its children's backdrop.
-const rims = new Map();
-let rimBlurPx = 0;
-
-function placeRim(panel, rim) {
-  const box = panel.getBoundingClientRect();
-  const style = getComputedStyle(panel);
-  const visible = rimBlurPx > 0 && box.width > 0 && style.display !== "none";
-  rim.style.display = visible ? "block" : "none";
-  if (!visible) return;
-  // Radii are in the panel's zoomed coordinates; the box is in the page's
-  const zoom = box.width / panel.offsetWidth || 1;
-  const radii = [
-    style.borderTopLeftRadius,
-    style.borderTopRightRadius,
-    style.borderBottomRightRadius,
-    style.borderBottomLeftRadius,
-  ].map((r) => Math.min(parseFloat(r) * zoom, box.width / 2, box.height / 2));
-  const inner = radii.map((r) => Math.max(0, r - RIM_WIDTH_PX));
-  const w = RIM_WIDTH_PX;
-  Object.assign(rim.style, {
-    left: `${box.left}px`,
-    top: `${box.top}px`,
-    width: `${box.width}px`,
-    height: `${box.height}px`,
-    background: `color-mix(in srgb, ${style.backgroundColor} 40%, transparent)`,
-    backdropFilter: `blur(${rimBlurPx}px)`,
-    clipPath: `path(evenodd, "${roundedRectPath(0, 0, box.width, box.height, radii)} ${roundedRectPath(w, w, box.width - 2 * w, box.height - 2 * w, inner)}")`,
-  });
-}
-
-const placeAllRims = () => rims.forEach((rim, panel) => placeRim(panel, rim));
-const rimObserver = new ResizeObserver(placeAllRims);
-
-function setRims(blurPx) {
-  rimBlurPx = blurPx;
-  document.querySelectorAll(".panel").forEach((panel) => {
-    if (rims.has(panel) || panel.closest(".set-switcher-menu")) return;
-    const rim = document.createElement("div");
-    rim.className = "panel-rim";
-    document.body.appendChild(rim);
-    rims.set(panel, rim);
-    rimObserver.observe(panel);
-  });
-  // Layout changes move panels without resizing them, so re-place next frame
-  requestAnimationFrame(placeAllRims);
-}
-window.addEventListener("resize", placeAllRims);
