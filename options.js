@@ -95,40 +95,59 @@ function renderSettings() {
   });
 }
 
-// Lets a slider's readout be clicked to type an exact number. get returns
-// the current number, set applies a typed one (already clamped to
-// min..max); Enter or leaving the field applies, Escape cancels.
-function makeValueEditable(readout, { get, set, min, max, label }) {
+// Lets a slider's readout be clicked to type an exact number, in a plain
+// text field that sits exactly where the readout text was. Only digits (and
+// a leading minus when min is negative) can be typed; get returns the
+// current number and set applies a valid one. Enter or leaving the field
+// applies, Escape cancels, and an out-of-range number is refused: Enter keeps
+// the field open marked invalid, and leaving it restores the old value.
+function makeValueEditable(readout, { get, set, min, max, label, suffix = "" }) {
   readout.tabIndex = 0;
   readout.title = `Click to type a value (${min} to ${max})`;
+  const allowed = min < 0 ? /^-?\d*$/ : /^\d*$/;
+  const valid = (text) => {
+    const value = Number(text);
+    return text !== "" && text !== "-" && value >= min && value <= max;
+  };
+
   const edit = () => {
     if (readout.querySelector("input")) return;
     const shown = readout.textContent;
     const input = document.createElement("input");
-    input.type = "number";
-    input.min = min;
-    input.max = max;
+    input.type = "text";
+    input.inputMode = "numeric";
     input.value = get();
     input.className = "value-input";
     input.setAttribute("aria-label", label);
+    input.maxLength = String(max).length + (min < 0 ? 1 : 0);
     readout.textContent = "";
-    readout.appendChild(input);
+    readout.append(input, suffix);
     input.focus();
     input.select();
+
+    // Refuse keystrokes and pastes that would make the text non-numeric
+    let lastGood = input.value;
+    input.addEventListener("input", () => {
+      if (allowed.test(input.value)) {
+        lastGood = input.value;
+        input.removeAttribute("aria-invalid");
+      } else {
+        input.value = lastGood;
+      }
+    });
 
     let done = false;
     const finish = (apply) => {
       if (done) return;
       done = true;
-      const typed = Number(input.value);
       readout.textContent = shown;
-      if (apply && input.value !== "" && Number.isFinite(typed)) {
-        set(Math.min(max, Math.max(min, Math.round(typed))));
-      }
+      if (apply && valid(input.value)) set(Number(input.value));
     };
     input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") finish(true);
       if (e.key === "Escape") finish(false);
+      if (e.key !== "Enter") return;
+      if (valid(input.value)) finish(true);
+      else input.setAttribute("aria-invalid", "true");
     });
     input.addEventListener("blur", () => finish(true));
   };
@@ -950,6 +969,7 @@ async function init() {
         min: Math.round(slider.min * 100),
         max: Math.round(slider.max * 100),
         label: `${slider.labels[0]?.textContent ?? key} size in percent`,
+        suffix: "%",
       });
       document.getElementById(id).addEventListener("input", (e) => {
         meta.settings[key] = parseFloat(e.target.value);
