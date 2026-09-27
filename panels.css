@@ -30,7 +30,7 @@ a.link {
   display: inline-block;
   color: var(--text);
   text-decoration: none;
-  padding: 0.5rem 1rem 0.5rem;
+  padding: calc(0.5rem * var(--density, 1)) calc(1rem * var(--density, 1));
   border-radius: 0.5rem;
   transition:
     background-color 0.3s,
@@ -59,7 +59,7 @@ body.no-favicons a.link .favicon {
   border-radius: var(--panel-radius);
   backdrop-filter: blur(var(--panel-blur));
   box-shadow: var(--panel-line);
-  padding: 1rem;
+  padding: calc(1rem * var(--density, 1));
   max-height: 100%;
   overflow: auto;
 }
@@ -84,12 +84,12 @@ body.no-favicons a.link .favicon {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    margin: 0 0 1.8rem;
+    margin: 0 0 calc(1.8rem * var(--density, 1));
 
     & label {
       opacity: 0.6;
       display: inline;
-      padding: 0.5rem 1rem;
+      padding: calc(0.5rem * var(--density, 1)) calc(1rem * var(--density, 1));
       color: var(--text);
       border-top-left-radius: 0.5rem;
       border-top-right-radius: 0.5rem;
@@ -98,7 +98,7 @@ body.no-favicons a.link .favicon {
     & .links {
       display: flex;
       flex-direction: row;
-      gap: 0.5rem;
+      gap: calc(0.5rem * var(--density, 1));
       border-top-right-radius: 0.5rem;
       border-bottom-left-radius: 0.5rem;
       border-bottom-right-radius: 0.5rem;
@@ -112,7 +112,7 @@ body.no-favicons a.link .favicon {
     }
 
     &:last-child {
-      margin: 0 0 0.5rem;
+      margin: 0 0 calc(0.5rem * var(--density, 1));
     }
   }
 }
@@ -122,11 +122,11 @@ body.no-favicons a.link .favicon {
   bottom: 0rem;
   right: 0rem;
   zoom: var(--clock-scale);
-  /* em, so it tracks the clock's own font size; tighter than the
-     default panel padding */
-  --clock-pad-y: 0.5em;
-  --clock-pad-x: 0.75em;
-  /* --density comes from the density setting (see the end of this file) */
+  /* Matches the links panel: its padding vertically, and its text inset
+     (panel padding plus link padding) horizontally, so the two panels read
+     as a set. --density comes from the density setting (end of file). */
+  --clock-pad-y: 1rem;
+  --clock-pad-x: 2rem;
   padding: calc(var(--clock-pad-y) * var(--density, 1)) calc(var(--clock-pad-x) * var(--density, 1));
   z-index: 1;
   border-top-right-radius: 0;
@@ -248,8 +248,9 @@ body[data-layout="sidebar"] {
 body[data-layout="center"],
 body[data-layout="sidebar"] {
   & .clock {
+    /* x matches the links' text inset, so the divider lines up with them */
     --clock-pad-y: 1.1rem;
-    --clock-pad-x: 1.5rem;
+    --clock-pad-x: 2rem;
     text-align: center;
 
     & > span {
@@ -298,48 +299,12 @@ body[data-layout="sidebar"] {
   }
 }
 
-/* Density; comfortable is the base spacing above. --density scales the
-   clock's padding; the links get their own spacing below. */
+/* Density scales every padding and gap in both panels (the calc()s using
+   --density above); comfortable is 1 */
 body[data-density="compact"] {
   --density: 0.6;
 }
 
 body[data-density="spacious"] {
   --density: 1.6;
-}
-
-body[data-density="compact"] .link-groups {
-  & a.link {
-    padding: 0.25rem 0.6rem;
-  }
-
-  & .group {
-    margin-bottom: 0.9rem;
-
-    & label {
-      padding: 0.25rem 0.6rem;
-    }
-  }
-
-  & .links {
-    gap: 0.2rem;
-  }
-}
-
-body[data-density="spacious"] .link-groups {
-  & a.link {
-    padding: 0.75rem 1.3rem;
-  }
-
-  & .group {
-    margin-bottom: 2.6rem;
-
-    & label {
-      padding: 0.6rem 1.3rem;
-    }
-  }
-
-  & .links {
-    gap: 0.9rem;
-  }
 }
