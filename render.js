@@ -268,16 +268,23 @@ const LOOK_DENSITIES = ["compact", "comfortable", "spacious"];
 const LOOK_LAYOUTS = ["corners", "center"];
 // Blur choices in px; the settings slider steps through these
 const LOOK_BLURS = [0, 6, 12, 18, 24, 36, 48, 72];
+// Corner radii in em, spaced so each looks clearly different on a big panel
+const LOOK_CORNERS = [0, 0.75, 1.75, 4];
+
+// The entry in stops closest to value, for saved values from older versions
+// that aren't on the current list
+const nearestStop = (stops, value) =>
+  stops.reduce((best, stop) => (Math.abs(stop - value) < Math.abs(best - value) ? stop : best));
 const LOOK_PRESETS = [
   { name: "Clear glass", style: "auto", blur: 6, corners: 0.75 },
-  { name: "Frosted", style: "auto", blur: 12, corners: 1 },
-  { name: "Heavy frost", style: "auto", blur: 24, corners: 1 },
+  { name: "Frosted", style: "auto", blur: 12, corners: 1.75 },
+  { name: "Heavy frost", style: "auto", blur: 24, corners: 1.75 },
   { name: "Smoked", style: "dark", blur: 12, corners: 0.75 },
-  { name: "Tinted", style: "dark", blur: 18, corners: 1.5 },
-  { name: "Milk glass", style: "light", blur: 18, corners: 1 },
+  { name: "Tinted", style: "dark", blur: 18, corners: 1.75 },
+  { name: "Milk glass", style: "light", blur: 18, corners: 1.75 },
   { name: "Square", style: "auto", blur: 6, corners: 0 },
-  { name: "Pill", style: "auto", blur: 12, corners: 2 },
-  { name: "Follow system", style: "system", blur: 12, corners: 1 },
+  { name: "Pill", style: "auto", blur: 12, corners: 4 },
+  { name: "Follow system", style: "system", blur: 12, corners: 1.75 },
 ];
 // Relative luminance above this means the photo is bright enough that a
 // light panel with dark text reads better than the usual dark panel
@@ -326,5 +333,5 @@ function applyLook(look, rgb) {
   root.setProperty("--panel-background", colors.panel + PANEL_ALPHA);
   root.setProperty("--text", colors.text);
   root.setProperty("--panel-blur", `${look.blur}px`);
-  root.setProperty("--panel-radius", `${look.corners}em`);
+  root.setProperty("--panel-radius", `${nearestStop(LOOK_CORNERS, look.corners)}em`);
 }

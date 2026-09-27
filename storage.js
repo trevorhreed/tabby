@@ -29,7 +29,7 @@ const defaultSettings = {
     layout: "corners",
     style: "auto",
     blur: 12,
-    corners: 1,
+    corners: 1.75,
     density: "comfortable",
   },
 };

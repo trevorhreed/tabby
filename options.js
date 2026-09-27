@@ -708,15 +708,7 @@ async function importAllData(data) {
 // ---- Look ----
 
 const STYLE_LABELS = { auto: "Auto", dark: "Dark", light: "Light", system: "System" };
-const CORNERS = [
-  [0, "Square"],
-  [0.25, "Slight"],
-  [0.5, "Soft"],
-  [0.75, "Medium"],
-  [1, "Round"],
-  [1.5, "Rounder"],
-  [2, "Pill"],
-];
+const CORNER_LABELS = { 0: "Square", 0.75: "Subtle", 1.75: "Round", 4: "Pill" };
 const CUSTOM_PRESET = "Custom";
 // The drawer needs to stay readable over any photo, so it's more opaque than
 // the panels it's styled after
@@ -731,7 +723,9 @@ const fillSelect = (select, entries) => {
 
 const matchingPreset = (look) =>
   LOOK_PRESETS.find((preset) =>
-    ["style", "blur", "corners"].every((key) => preset[key] === look[key]),
+    preset.style === look.style &&
+    preset.blur === look.blur &&
+    preset.corners === nearestStop(LOOK_CORNERS, look.corners),
   );
 
 function renderLook() {
@@ -751,7 +745,7 @@ function renderLook() {
   );
   document.getElementById("look-blur").value = blurIndex;
   document.getElementById("look-blur-value").textContent = look.blur ? `${look.blur}px` : "None";
-  document.getElementById("look-corners").value = look.corners;
+  document.getElementById("look-corners").value = nearestStop(LOOK_CORNERS, look.corners);
   applyDrawerTheme();
 }
 
@@ -772,7 +766,10 @@ function setupLook() {
   document.getElementById("look-blur-stops").innerHTML = LOOK_BLURS.map(
     (_, i) => `<option value="${i}"></option>`,
   ).join("");
-  fillSelect(document.getElementById("look-corners"), CORNERS);
+  fillSelect(
+    document.getElementById("look-corners"),
+    LOOK_CORNERS.map((em) => [em, CORNER_LABELS[em]]),
+  );
 
   document.getElementById("look-layout").addEventListener("click", (e) => {
     const layout = e.target.closest("button")?.dataset.layout;
