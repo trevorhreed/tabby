@@ -50,8 +50,22 @@ function initSetSwitcher(setNames, activeSetName) {
   });
 }
 
-// Applies everything settings control; safe to call again with new settings
+const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+// Applies everything settings control; safe to call again with new settings.
+// A layout change animates: the panels glide and reshape into their new
+// places (see the view transition styles in panels.css).
 function renderSettings(settings) {
+  const layoutChanged =
+    currentSettings && currentSettings.look.layout !== settings.look.layout;
+  if (layoutChanged && document.startViewTransition && !reducedMotion.matches) {
+    document.startViewTransition(() => applySettings(settings));
+  } else {
+    applySettings(settings);
+  }
+}
+
+function applySettings(settings) {
   currentSettings = settings;
   applyScales(settings);
   applyLayout(settings.look);

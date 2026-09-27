@@ -265,6 +265,78 @@ body[data-layout="center"] {
   }
 }
 
+/* Layout changes run as a view transition (new-tab.js). The links panel in
+   Corners and the whole Center panel share a name, so the frosted panel
+   itself glides and reshapes from one to the other with a slight springy
+   overshoot; the clock and the controls fly to their new spots alongside
+   it. Contents hand off quickly (old out, then new in) instead of
+   overlapping, so text never shows doubled mid-move. */
+.link-groups {
+  view-transition-name: panel;
+}
+
+body[data-layout="center"] {
+  & .stack {
+    view-transition-name: panel;
+  }
+
+  & .stack > .link-groups {
+    view-transition-name: links;
+  }
+}
+
+.clock {
+  view-transition-name: clock;
+}
+
+.top-controls {
+  view-transition-name: controls;
+}
+
+::view-transition-group(*) {
+  animation-duration: 650ms;
+  /* overshoots its target a little, then settles */
+  animation-timing-function: cubic-bezier(0.34, 1.35, 0.64, 1);
+}
+
+/* Snapshots don't carry the panels' backdrop blur, so the moving groups
+   apply it themselves; otherwise the panels would lose their frost for the
+   length of the move */
+::view-transition-group(panel),
+::view-transition-group(clock),
+::view-transition-group(controls) {
+  backdrop-filter: blur(var(--panel-blur));
+  border-radius: var(--panel-radius);
+  overflow: hidden;
+}
+
+::view-transition-old(*) {
+  animation: 180ms ease-in both tabby-fade-out;
+}
+
+::view-transition-new(*) {
+  animation: 300ms ease-out 250ms both tabby-fade-in;
+}
+
+@keyframes tabby-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes tabby-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.4rem);
+  }
+}
+
+/* Only panels move; the photo behind stays put */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+
 /* Density scales every padding and gap in both panels (the calc()s using
    --density above); comfortable is 1 */
 body[data-density="compact"] {
