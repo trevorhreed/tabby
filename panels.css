@@ -325,34 +325,49 @@ body.nothing-shown .top-controls {
   }
 }
 
-/* Layout changes run as a view transition (new-tab.js). The links panel in
-   Corners and the whole Center panel share a name, so the frosted panel
-   itself glides and reshapes from one to the other with a slight springy
-   overshoot; the clock and the controls fly to their new spots alongside
-   it. Contents hand off quickly (old out, then new in) instead of
-   overlapping, so text never shows doubled mid-move. */
-.link-groups {
-  view-transition-name: panel;
-}
-
-body[data-layout="center"] {
-  & .stack {
+/* Layout and attach changes run as a view transition (new-tab.js), and
+   only panels that actually move take part: new-tab.js marks the root with
+   the kind of change, and only those panels get a transition name. Anything
+   unnamed stays live and simply doesn't change.
+   - Layout change: the links panel in Corners and the whole Center panel
+     share a name, so the frosted panel glides and reshapes from one to the
+     other while the clock flies alongside. The gear stays put.
+   - Attach change: in Corners the links, clock and gear slide between
+     floating and flush; in Center only the gear does. */
+:root.moving-layout {
+  & .link-groups {
     view-transition-name: panel;
   }
 
-  & .stack > .link-groups {
-    view-transition-name: links;
+  & body[data-layout="center"] {
+    & .stack {
+      view-transition-name: panel;
+    }
+
+    & .stack > .link-groups {
+      view-transition-name: links;
+    }
+  }
+
+  & .clock {
+    view-transition-name: clock;
   }
 }
 
-.clock {
-  view-transition-name: clock;
-}
+:root.moving-attach {
+  & body[data-layout="corners"] {
+    & .link-groups {
+      view-transition-name: panel;
+    }
 
-/* Only named (so only animated) when attaching moves it; otherwise it stays
-   part of the page and simply doesn't change during a layout switch */
-:root.moving-gear .top-controls {
-  view-transition-name: controls;
+    & .clock {
+      view-transition-name: clock;
+    }
+  }
+
+  & .top-controls {
+    view-transition-name: controls;
+  }
 }
 
 ::view-transition-group(*) {
@@ -389,25 +404,15 @@ body[data-layout="center"] {
   border-radius: 0 0 0 min(var(--panel-radius), 1rem);
 }
 
-::view-transition-old(*) {
-  animation: 180ms ease-in both tabby-fade-out;
-}
-
+/* Old and new snapshots cross-fade at the same time. Each snapshot carries
+   its panel's tint, so fading one out before the other came in (as an
+   earlier version did, to avoid doubled text) left an empty stretch where
+   the panels seemed to vanish. Overlapping keeps them solid throughout;
+   the browser blends the pair so the combined opacity never dips. */
+::view-transition-old(*),
 ::view-transition-new(*) {
-  animation: 300ms ease-out 250ms both tabby-fade-in;
-}
-
-@keyframes tabby-fade-out {
-  to {
-    opacity: 0;
-  }
-}
-
-@keyframes tabby-fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(0.4rem);
-  }
+  animation-duration: 400ms;
+  animation-timing-function: ease-in-out;
 }
 
 /* Only panels move; the photo behind stays put */
