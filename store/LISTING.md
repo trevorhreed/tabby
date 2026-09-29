@@ -32,25 +32,10 @@ Everything syncs through your Chrome account, and you can export your links anyt
 **Getting started:** open a new tab, click the gear in the top-right corner, and choose Settings to add your links.
 
 ## Category
-Productivity
+Make Chrome Yours › Functionality & UI
 
 ## Language
 English
-
-## Tags/Keywords
-- new tab
-- new tab page
-- dashboard
-- links
-- bookmarks
-- link sets
-- seasonal
-- backgrounds
-- wallpaper
-- clock
-- productivity
-- minimal
-- customizable
 
 ## Privacy Statement
 Almanac stores your links and settings in Chrome's built-in storage. Links and settings sync to your Chrome account through Chrome sync storage; the choice of which link set a device shows is kept in local storage on that device and is never synced. No data is collected, shared, or sent to any external server, and there is no analytics or tracking of any kind.
