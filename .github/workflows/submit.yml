@@ -1,0 +1,20 @@
+name: Submit for review
+
+# Submits the last uploaded version (a draft from the publish workflow, or
+# anything uploaded in the dashboard) for Chrome Web Store review. Run it once
+# the dashboard's listing and privacy details are up to date.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Submit the latest upload
+        run: npx -y chrome-webstore-upload-cli@3.5.0 publish
+        env:
+          EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
+          CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
+          REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}

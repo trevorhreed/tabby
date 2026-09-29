@@ -15,3 +15,17 @@ Users' links live in `chrome.storage.sync` (`tabbyMeta`, `tabbySet:<name>`) and 
 - Never rename or delete storage keys. Older versions on other devices still read them.
 - Never write or delete user data during load.
 - Test changes against data saved by the released version, not only fresh installs.
+
+## Releasing
+
+`.github/workflows/publish.yml` states the decision tree at its top. On a merge to `release`:
+
+- Nothing in the package changed (workflows, docs, `store/` only): nothing runs. Dashboard-only changes are made and submitted by hand in the developer dashboard.
+- The package changed, plus something the dashboard needs by hand (`store/`, `icons/`, manifest permissions): it uploads a draft.
+- Only the package changed: it uploads and submits for review.
+
+What to do:
+
+- After a draft upload, or when merging a `store/`-only change, tell the user exactly what to update in the dashboard, pointing at `store/LISTING.md` and the files in `store/`. After a draft, once they confirm it's done, run `gh workflow run submit.yml`.
+- To override the automatic choice, for example when the dashboard needs something the repo doesn't show, run `gh workflow run publish.yml -f mode=draft` (or `submit`) after merging.
+- The run summary says which mode it chose and why: `gh run view <id>`.

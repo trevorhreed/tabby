@@ -1,30 +1,102 @@
 name: Publish to Chrome Web Store
 
+# The release decision tree, driven by what the merged change touched:
+#
+#   touches the package (on.push.paths)?
+#   ├─ no  → nothing runs. Dashboard-only changes (store/) are made and
+#   │        submitted by hand in the developer dashboard; nothing to upload.
+#   └─ yes → touches anything the dashboard needs updated by hand
+#            (DASHBOARD_PATHS, or manifest permissions)?
+#            ├─ yes → upload as a draft; submit it with the "Submit for
+#            │        review" workflow once the dashboard is updated
+#            └─ no  → upload and submit for review
+#
+# Run by hand, the "mode" input overrides the second question.
+
 on:
   push:
     branches: [release]
-    # Store listing assets and docs aren't in the zip, so changes to only
-    # these would publish an identical extension under a new version.
-    paths-ignore:
-      - "store/**"
-      - "**.md"
+    # What goes into the package. build-tints.sh and tints.html generate its
+    # tints.json.
+    paths:
+      - "manifest.json"
+      - "*.html"
+      - "*.js"
+      - "*.css"
+      - "images/**"
+      - "icons/**"
+      - "scripts/build-tints.sh"
+      - "scripts/tints.html"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "draft uploads without submitting; submit sends it for review; auto decides"
+        type: choice
+        options: [auto, draft, submit]
+        default: auto
+
+env:
+  # Changes here also need hand edits in the dashboard, which the store's API
+  # can't make: listing text and images (store/), and the store icon, which
+  # the dashboard keeps separately from the package's (icons/). Space
+  # separated.
+  DASHBOARD_PATHS: "store/ icons/"
+  # Manifest fields whose changes need the dashboard's Privacy practices tab
+  # updated
+  DASHBOARD_MANIFEST_FIELDS: "permissions optional_permissions host_permissions"
+
+permissions:
+  contents: read
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # enough history to diff the pushed range
+          fetch-depth: 0
+
+      - name: Decide draft or submit
+        id: mode
+        env:
+          INPUT_MODE: ${{ inputs.mode }}
+          # the pushed range; a new branch or a hand run has no "before"
+          BEFORE: ${{ github.event.before }}
+        run: |
+          MODE="${INPUT_MODE:-auto}"
+          REASON="set when run by hand"
+          if [ "$MODE" = auto ]; then
+            if [ -z "$BEFORE" ] || [ "$BEFORE" = 0000000000000000000000000000000000000000 ] || ! git cat-file -e "$BEFORE" 2>/dev/null; then
+              BEFORE=HEAD~1
+            fi
+            fields() { git show "$1:manifest.json" | jq -c --arg f "$DASHBOARD_MANIFEST_FIELDS" '[($f | split(" "))[] as $k | .[$k]]'; }
+            # DASHBOARD_PATHS is split on spaces into separate paths on purpose
+            # shellcheck disable=SC2086
+            if ! git diff --quiet "$BEFORE" HEAD -- $DASHBOARD_PATHS; then
+              MODE=draft; REASON="changed $(git diff --name-only "$BEFORE" HEAD -- $DASHBOARD_PATHS | tr '\n' ' ')"
+            elif [ "$(fields "$BEFORE")" != "$(fields HEAD)" ]; then
+              MODE=draft; REASON="manifest permissions changed"
+            else
+              MODE=submit; REASON="nothing that needs the dashboard changed"
+            fi
+          fi
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+          echo "Mode: $MODE ($REASON)"
+          echo "**$MODE**: $REASON" >> "$GITHUB_STEP_SUMMARY"
 
       # The patch version is the workflow run number: always increasing, so
       # every publish gets a fresh version without pushing a bump commit back
       # to release (the branch ruleset only allows changes via pull request).
       # The manifest's major.minor is kept; bump those in the repo as needed.
       - name: Set version from run number
+        id: version
         run: |
           VERSION=$(jq -r .version manifest.json)
           MAJOR_MINOR=$(echo "$VERSION" | cut -d. -f1,2)
           NEW_VERSION="${MAJOR_MINOR}.${{ github.run_number }}"
           jq --arg v "$NEW_VERSION" '.version = $v' manifest.json > manifest.tmp && mv manifest.tmp manifest.json
+          echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
           echo "Version: $VERSION -> $NEW_VERSION"
 
       - name: Precompute wallpaper tints
@@ -40,8 +112,9 @@ jobs:
             -x "store/*" \
             -x "scripts/*"
 
-      - name: Upload and publish
-        run: npx -y chrome-webstore-upload-cli@3.5.0 upload --source extension.zip --auto-publish --max-await-in-progress 300
+      # Without a command the CLI uploads and submits; "upload" only uploads
+      - name: Upload${{ steps.mode.outputs.mode == 'submit' && ' and submit for review' || ' as a draft' }}
+        run: npx -y chrome-webstore-upload-cli@3.5.0 ${{ steps.mode.outputs.mode == 'draft' && 'upload' || '' }} --source extension.zip --max-await-in-progress 300
         env:
           EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
           CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
