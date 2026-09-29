@@ -92,12 +92,18 @@ const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 // animate: the panels glide and reshape into their new places (see the
 // view transition styles in panels.css).
 function renderSettings(settings) {
-  const moved =
-    currentSettings &&
-    (currentSettings.look.layout !== settings.look.layout ||
-      currentSettings.look.attached !== settings.look.attached);
-  if (moved && document.startViewTransition && !reducedMotion.matches) {
-    document.startViewTransition(() => applySettings(settings));
+  const layoutChanged =
+    currentSettings && currentSettings.look.layout !== settings.look.layout;
+  const attachChanged =
+    currentSettings && currentSettings.look.attached !== settings.look.attached;
+  if ((layoutChanged || attachChanged) && document.startViewTransition && !reducedMotion.matches) {
+    // The gear sits in the same corner in both layouts, so it only joins the
+    // transition when attaching actually moves it
+    document.documentElement.classList.toggle("moving-gear", attachChanged);
+    const transition = document.startViewTransition(() => applySettings(settings));
+    transition.finished.finally(() =>
+      document.documentElement.classList.remove("moving-gear"),
+    );
   } else {
     applySettings(settings);
   }
