@@ -152,7 +152,7 @@ body[data-layout="corners"] {
     right: var(--space-3);
     bottom: var(--space-3);
     /* a one-line panel's ends curve in up to half its height, so the sides
-       also pad by half the radius to keep the text clear of a pill's ends */
+       also pad by half the radius to keep the text clear of its round ends */
     padding: var(--space-2) max(var(--space-3), calc(var(--panel-radius) * 0.5));
 
     & > span {

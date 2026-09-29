@@ -180,12 +180,6 @@
         gap: 8px;
       }
 
-      .grid-2 {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-      }
-
       .hint {
         color: var(--ink-muted);
         font-size: 12px;
@@ -259,10 +253,6 @@
         cursor: pointer;
       }
 
-      .toggle small:empty {
-        display: none;
-      }
-
       .toggle small {
         display: block;
         color: var(--ink-muted);
@@ -274,6 +264,45 @@
         border: 1px solid var(--line);
         border-radius: 10px;
         overflow: hidden;
+      }
+
+      .field-head {
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .field-head [hidden] {
+        display: none;
+      }
+
+      /* Presets as buttons, two or three to a row */
+      .preset-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+        gap: 8px;
+      }
+
+      .preset-grid button {
+        padding: 10px 12px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: none;
+        color: var(--ink-muted);
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+      }
+
+      .preset-grid button:hover {
+        background: var(--hover);
+        color: var(--ink);
+      }
+
+      .preset-grid button[aria-pressed="true"] {
+        background: var(--hover);
+        color: var(--ink);
+        font-weight: 600;
+        border-color: color-mix(in srgb, var(--ink) 50%, transparent);
       }
 
       .segmented-2 {
@@ -627,6 +656,16 @@
       <div class="drawer-body">
         <section data-panel="look">
           <div class="field">
+            <div class="field-head">
+              <span class="field-label">Presets</span>
+              <span class="field-label" id="look-custom" hidden>Custom</span>
+            </div>
+            <div class="preset-grid" id="look-presets"></div>
+          </div>
+
+          <h2>Customize</h2>
+
+          <div class="field">
             <span class="field-label">Layout</span>
             <div class="segmented segmented-2" id="look-layout">
               <button data-layout="corners">Corners</button>
@@ -636,7 +675,7 @@
 
           <label class="toggle">
             <input type="checkbox" id="look-attached" />
-            <span>Attach to the corners<small id="look-attached-hint"></small></span>
+            <span>Attach to the corners</span>
           </label>
 
           <div class="field">
@@ -649,19 +688,13 @@
           </div>
 
           <div class="field">
-            <label for="look-preset">Preset</label>
-            <select id="look-preset"></select>
+            <span class="field-label">Style</span>
+            <div class="segmented" id="look-style"></div>
           </div>
 
-          <div class="grid-2">
-            <div class="field">
-              <label for="look-style">Style</label>
-              <select id="look-style"></select>
-            </div>
-            <div class="field">
-              <label for="look-corners">Corners</label>
-              <select id="look-corners"></select>
-            </div>
+          <div class="field">
+            <span class="field-label">Corners</span>
+            <div class="segmented segmented-3" id="look-corners"></div>
           </div>
 
           <div class="field">
