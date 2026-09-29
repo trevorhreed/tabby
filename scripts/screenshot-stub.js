@@ -29,8 +29,9 @@
   const store = { sync: {}, local: {} };
   const link = (label, url) => ({ label, url, hide: false });
   store.sync.tabbyMeta = {
-    // Site icons are off by default but worth showing in the store shots
-    settings: { showFavicons: true, look: JSON.parse(params.get("look") || "{}") },
+    // Site icons stay off, as they are by default, so the shots show what a
+    // new install looks like
+    settings: { look: JSON.parse(params.get("look") || "{}") },
     setNames: ["Work", "Home"],
   };
   store.sync["tabbySet:Work"] = {
