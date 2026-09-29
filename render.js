@@ -305,7 +305,7 @@ const LOOK_PRESETS = [
   {
     name: "Clear",
     layout: "center", attached: true, density: "compact",
-    style: "auto", blur: 6, corners: 0.75,
+    style: "auto", blur: 3, corners: 0.75,
   },
   {
     name: "Paper",
