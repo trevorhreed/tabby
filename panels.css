@@ -68,9 +68,11 @@ body.no-favicons a.link .favicon {
   background: var(--panel-background);
   border-radius: var(--panel-radius);
   backdrop-filter: blur(var(--panel-blur));
-  /* at least 30% of the corner radius, about how far a rounded corner cuts
-     in along the diagonal, so big radii never clip text in the corners */
-  padding: max(var(--space-3), calc(var(--panel-radius) * 0.3));
+  /* at least half the corner radius. A rounded corner cuts in about 30% of
+     its radius along the diagonal, but text running into the corner along
+     an edge (the last link in a row, a label at the top) meets the curve
+     sooner, so half keeps it clear with some air */
+  padding: max(var(--space-3), calc(var(--panel-radius) * 0.5));
   max-height: 100%;
   overflow: auto;
 }
