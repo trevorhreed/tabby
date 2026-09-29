@@ -1,0 +1,435 @@
+/* Wallpaper and panel styles shared by the new tab and the settings preview */
+
+:root {
+  /* --image: url('RANDOMLY GENERATED'); */
+  --background: #3338;
+  --text: #ccc;
+  --text-hover: #ccc3;
+  --panel-background: #000c;
+  --font-size: 20px;
+  --panel-scale: 1;
+  /* Look settings; render.js's applyLook overrides these */
+  --panel-radius: 1em;
+  --panel-blur: 0px;
+}
+
+body {
+  background: var(--background);
+  background-image: var(--image);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  color: var(--text);
+}
+
+/* Spacing scale. Every gap below comes from these steps, times Density, so
+   the relationships hold at any density: things that belong together sit
+   closer than things that don't. Defined on body, where the density
+   setting lands, so the calc()s see it (on :root they'd resolve at 1). */
+body {
+  --space-1: calc(0.4rem * var(--density, 1)); /* label to its links */
+  --space-2: calc(0.8rem * var(--density, 1));
+  --space-3: calc(1.2rem * var(--density, 1)); /* panel padding, screen margin */
+  --space-4: calc(2rem * var(--density, 1)); /* group to group */
+  --space-5: calc(3.2rem * var(--density, 1)); /* clock to links */
+  /* A link's own padding (its hover target), part of the text inset */
+  --link-pad-y: calc(0.3rem * var(--density, 1));
+  --link-pad-x: calc(0.45rem * var(--density, 1));
+}
+
+a.link {
+  display: inline-block;
+  color: var(--text);
+  text-decoration: none;
+  padding: var(--link-pad-y) var(--link-pad-x);
+  border-radius: 0.5rem;
+  transition:
+    background-color 0.3s,
+    color 0.3s;
+
+  &:hover {
+    color: var(--text-hover);
+    background-color: var(--text-hover);
+  }
+}
+
+a.link .favicon {
+  width: 1em;
+  height: 1em;
+  margin-right: 0.45em;
+  vertical-align: -0.15em;
+}
+
+body.no-favicons a.link .favicon {
+  display: none;
+}
+
+.panel {
+  background: var(--panel-background);
+  border-radius: var(--panel-radius);
+  backdrop-filter: blur(var(--panel-blur));
+  /* at least half the corner radius. A rounded corner cuts in about 30% of
+     its radius along the diagonal, but text running into the corner along
+     an edge (the last link in a row, a label at the top) meets the curve
+     sooner, so half keeps it clear with some air */
+  padding: max(var(--space-3), calc(var(--panel-radius) * 0.5));
+  max-height: 100%;
+  overflow: auto;
+}
+
+.link-groups {
+  /* zoom (not transform) so layout and scrolling scale with it */
+  zoom: var(--panel-scale);
+  box-sizing: border-box;
+  /* stack above the clock when they overlap in a small window */
+  z-index: 2;
+
+  & .group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: calc(var(--space-4) - 2 * var(--link-pad-y));
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    /* Small caps, lined up with the link text below */
+    & label {
+      display: block;
+      padding: 0 var(--link-pad-x);
+      margin-bottom: calc(var(--space-1) - var(--link-pad-y));
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      opacity: 0.75;
+      color: var(--text);
+    }
+
+    & .links {
+      display: flex;
+      flex-wrap: wrap;
+      /* about 1.2rem between one link's text and the next */
+      column-gap: calc(1.2rem * var(--density, 1) - 2 * var(--link-pad-x));
+    }
+  }
+}
+
+.clock {
+  zoom: var(--panel-scale);
+  z-index: 1;
+
+  /* Inline style: date and time on one line with a bullet between */
+  & .clock-date + .clock-time::before {
+    content: " \2022  ";
+  }
+}
+
+.clock-time {
+  font-variant-numeric: tabular-nums;
+}
+
+/* The clock and links are wrapped in .stack. Corners places each panel on
+   its own, so the wrapper stays out of layout. */
+.stack {
+  display: contents;
+}
+
+/* Corners: links top-left, a quiet one-line clock bottom-right, and the
+   controls top-right, each floating a screen margin in from the edges */
+body[data-layout="corners"] {
+  & .link-groups {
+    position: fixed;
+    top: var(--space-3);
+    left: var(--space-3);
+    max-width: calc((100vw - 2 * var(--space-3)) / var(--panel-scale));
+    max-height: calc((100vh - 2 * var(--space-3)) / var(--panel-scale));
+  }
+
+  & .clock {
+    position: fixed;
+    right: var(--space-3);
+    bottom: var(--space-3);
+    /* a one-line panel's ends curve in up to half its height, so the sides
+       also pad by half the radius to keep the text clear of its round ends */
+    padding: var(--space-2) max(var(--space-3), calc(var(--panel-radius) * 0.5));
+
+    & > span {
+      font-size: 2rem;
+      font-weight: 300;
+    }
+  }
+
+}
+
+/* The controls sit in the window's top-right corner in every layout, on a
+   small frosted backing: bare glyphs vanished on bright photos */
+.top-controls {
+  position: fixed;
+  top: var(--space-3);
+  right: var(--space-3);
+  z-index: 3;
+  padding: 0;
+  border-radius: min(var(--panel-radius), 1rem);
+  background: var(--panel-background);
+  backdrop-filter: blur(var(--panel-blur));
+  filter: none;
+}
+
+/* Attached: each panel in a corner sits flush in it, with the corner
+   against the screen edges squared off and only the inner corner rounded.
+   That's every panel in Corners, and just the gear in Center. */
+body[data-attached] .top-controls {
+  top: 0;
+  right: 0;
+  border-radius: 0 0 0 min(var(--panel-radius), 1rem);
+}
+
+body[data-layout="corners"][data-attached] {
+  & .link-groups {
+    top: 0;
+    left: 0;
+    max-width: calc(100vw / var(--panel-scale));
+    max-height: calc(100vh / var(--panel-scale));
+    border-radius: 0 0 var(--panel-radius) 0;
+  }
+
+  & .clock {
+    right: 0;
+    bottom: 0;
+    border-radius: var(--panel-radius) 0 0 0;
+  }
+}
+
+/* Center: clock over links in one panel in the middle of the screen. The
+   wrapper becomes the single panel: two touching panels showed a seam of
+   photo between them whenever they landed on fractional pixels (browser
+   zoom, the scaled settings preview, the size slider). */
+body[data-layout="center"] {
+  /* the links' text inset from the panel edge; the clock lines up with it */
+  --inset: calc(var(--space-4) + var(--link-pad-x));
+
+  display: grid;
+  justify-content: center;
+  align-content: center;
+  /* keeps the panel off the window's edges when it's as tall as the window */
+  padding: var(--space-3);
+
+  & .stack {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    /* steady width, so toggling seconds, date or links doesn't resize the
+       panel (or make the layout animation lurch) */
+    min-width: calc(26rem * var(--panel-scale));
+    max-width: calc(100vw - 2 * var(--space-3));
+    max-height: 100%;
+    /* when the panel is taller than the window, only the links scroll, so
+       the clock stays in view */
+    overflow: hidden;
+    border-radius: var(--panel-radius);
+    background: var(--panel-background);
+    backdrop-filter: blur(var(--panel-blur));
+  }
+
+  & .stack > .panel {
+    position: relative;
+    background: none;
+    backdrop-filter: none;
+    border-radius: 0;
+    max-height: none;
+    overflow: visible;
+  }
+
+  /* .stack > so it outranks the .stack > .panel reset above */
+  & .stack > .link-groups {
+    flex: 1 1 auto;
+    padding: var(--space-5) var(--space-4) var(--space-4);
+    min-height: 0;
+    overflow: auto;
+  }
+
+  /* Without the clock above, the links open the panel */
+  &.no-clock .stack > .link-groups {
+    padding-top: var(--space-4);
+  }
+
+  /* Only the links give up height */
+  & .clock {
+    flex-shrink: 0;
+  }
+
+  /* Lock-screen clock: the date on its own line above a large, light time,
+     left-aligned with the links so the panel reads as one card */
+  & .clock {
+    order: -1;
+    padding: var(--space-4) var(--inset) 0;
+
+    & > span {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+
+  & .clock-date {
+    font-size: 1.6rem;
+    font-weight: 500;
+    opacity: 0.85;
+  }
+
+  /* With the time hidden, the date takes its place */
+  & .clock-date:only-child {
+    font-size: 3.2rem;
+    font-weight: 300;
+    opacity: 1;
+  }
+
+  & .clock-time {
+    font-size: 7rem;
+    font-weight: 200;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    /* the numerals' side bearing, so the digit edge meets the text inset */
+    margin-left: -0.05em;
+  }
+
+  & .clock-date + .clock-time::before {
+    content: none;
+  }
+
+  & .clock-suffix {
+    font-size: 0.3em;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+  }
+
+  &.no-links .clock {
+    padding-bottom: var(--space-4);
+  }
+}
+
+/* Nothing to show (no links, no clock): no panel at all, just a dim gear in
+   the top-right corner that brightens on hover */
+/* Nothing to show (no links, no clock): no panel at all, so the gear,
+   alone in the corner, dims until hovered */
+body.nothing-shown .stack {
+  display: none;
+}
+
+body.nothing-shown .top-controls {
+  opacity: 0.6;
+  transition: opacity 0.3s;
+
+  &:hover {
+    opacity: 1;
+  }
+}
+
+/* Layout, density, corner and attach changes run as a view transition (new-tab.js), and
+   only panels that actually move take part: new-tab.js marks the root with
+   the kind of change, and only those panels get a transition name. Anything
+   unnamed stays live and simply doesn't change.
+   - Layout, density or corner change: the links panel in Corners and the
+     whole Center panel share a name, so the frosted panel glides and
+     reshapes from one shape to the other while the clock follows. The gear
+     stays put.
+   - Attach change: in Corners the links, clock and gear slide between
+     floating and flush; in Center only the gear does. */
+:root.moving-panels {
+  & .link-groups {
+    view-transition-name: panel;
+  }
+
+  & body[data-layout="center"] {
+    & .stack {
+      view-transition-name: panel;
+    }
+
+    & .stack > .link-groups {
+      view-transition-name: links;
+    }
+  }
+
+  & .clock {
+    view-transition-name: clock;
+  }
+}
+
+:root.moving-attach {
+  & body[data-layout="corners"] {
+    & .link-groups {
+      view-transition-name: panel;
+    }
+
+    & .clock {
+      view-transition-name: clock;
+    }
+  }
+
+  & .top-controls {
+    view-transition-name: controls;
+  }
+}
+
+::view-transition-group(*) {
+  animation-duration: 650ms;
+  /* overshoots its target a little, then settles */
+  animation-timing-function: cubic-bezier(0.34, 1.35, 0.64, 1);
+}
+
+/* Snapshots don't carry the panels' backdrop blur, so the moving groups
+   apply it themselves; otherwise the panels would lose their frost for the
+   length of the move */
+::view-transition-group(panel),
+::view-transition-group(clock),
+::view-transition-group(controls) {
+  backdrop-filter: blur(var(--panel-blur));
+  border-radius: var(--panel-radius);
+  overflow: hidden;
+}
+
+/* The moving groups take the destination's shape, including attached
+   corners, rather than rounding every corner and snapping square at the
+   end */
+:root[data-layout="corners"][data-attached] {
+  &::view-transition-group(panel) {
+    border-radius: 0 0 var(--panel-radius) 0;
+  }
+
+  &::view-transition-group(clock) {
+    border-radius: var(--panel-radius) 0 0 0;
+  }
+}
+
+:root[data-attached]::view-transition-group(controls) {
+  border-radius: 0 0 0 min(var(--panel-radius), 1rem);
+}
+
+/* Old and new snapshots cross-fade at the same time. Each snapshot carries
+   its panel's tint, so fading one out before the other came in (as an
+   earlier version did, to avoid doubled text) left an empty stretch where
+   the panels seemed to vanish. Overlapping keeps them solid throughout;
+   the browser blends the pair so the combined opacity never dips. */
+::view-transition-old(*),
+::view-transition-new(*) {
+  animation-duration: 400ms;
+  animation-timing-function: ease-in-out;
+}
+
+/* Only panels move; the photo behind stays put */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+
+/* Density scales every padding and gap in both panels (the calc()s using
+   --density above); comfortable is 1 */
+body[data-density="compact"] {
+  --density: 0.7;
+}
+
+body[data-density="spacious"] {
+  --density: 1.6;
+}

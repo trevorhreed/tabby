@@ -1,0 +1,18 @@
+name: Check wallpaper tints
+
+# Publishing depends on build-tints.sh, so exercise it on pull requests that
+# could break it instead of finding out on release.
+on:
+  pull_request:
+    paths:
+      - "images/**"
+      - "scripts/**"
+      - "render.js"
+      - ".github/workflows/check-tints.yml"
+
+jobs:
+  build-tints:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sh scripts/build-tints.sh

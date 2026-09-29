@@ -26,30 +26,53 @@ function cancelPendingSave() {
 
 function flushSave() {
   cancelPendingSave();
+  sendPreview();
   return saveAll().catch((err) => {
-    showStatus("Error saving changes", "error");
+    // Data from a newer version is read-only here; say why
+    showStatus(storedDataIsNewer ? err.message : "Error saving changes", "error");
     console.error(err);
   });
 }
 
 function scheduleSave() {
+  sendPreview();
   clearTimeout(saveTimer);
   saveTimer = setTimeout(flushSave, SAVE_DEBOUNCE_MS);
 }
 
-function showStatus(message, type) {
-  const status = document.getElementById("status");
-  status.textContent = message;
-  status.className = `status show ${type}`;
+const STATUS_MS = 3000;
+// Long enough to notice a mistake and reach for Undo
+const UNDO_STATUS_MS = 6000;
+let statusTimer = null;
 
-  setTimeout(() => {
-    status.className = "status";
-  }, 3000);
+// action, when given, is { label, run } and shows as a button in the toast
+function showStatus(message, type, action = null) {
+  const status = document.getElementById("status");
+  const button = document.getElementById("status-action");
+  document.getElementById("status-text").textContent = message;
+  status.className = `status show ${type}`;
+  button.hidden = !action;
+  button.textContent = action ? action.label : "";
+  button.onclick = action
+    ? () => {
+        status.className = "status";
+        action.run();
+      }
+    : null;
+
+  clearTimeout(statusTimer);
+  statusTimer = setTimeout(
+    () => {
+      status.className = "status";
+    },
+    action ? UNDO_STATUS_MS : STATUS_MS,
+  );
 }
 
 // Maps settings-checkbox element ids to their settings keys
 const SETTING_CHECKBOXES = {
   "show-links": "showLinks",
+  "show-favicons": "showFavicons",
   "show-date": "showDate",
   "show-time": "showTime",
   "twelve-hour-clock": "twelveHourClock",
@@ -59,17 +82,79 @@ const SETTING_CHECKBOXES = {
 // Maps settings-slider element ids to their settings keys; each slider has
 // a matching "<id>-value" percentage readout
 const SETTING_SLIDERS = {
-  "links-scale": "linksScale",
-  "clock-scale": "clockScale",
+  "panel-scale": "scale",
 };
 
 function renderSettings() {
+  renderLook();
   Object.entries(SETTING_CHECKBOXES).forEach(([id, key]) => {
     document.getElementById(id).checked = meta.settings[key];
   });
   Object.entries(SETTING_SLIDERS).forEach(([id, key]) => {
     document.getElementById(id).value = meta.settings[key];
     renderScaleValue(id, key);
+  });
+}
+
+// Lets a slider's readout be clicked to type an exact number, in a plain
+// text field that sits exactly where the readout text was. Only digits (and
+// a leading minus when min is negative) can be typed; get returns the
+// current number and set applies a valid one. Enter or leaving the field
+// applies, Escape cancels, and an out-of-range number is refused: Enter keeps
+// the field open marked invalid, and leaving it restores the old value.
+function makeValueEditable(readout, { get, set, min, max, label, suffix = "" }) {
+  readout.tabIndex = 0;
+  readout.title = `Click to type a value (${min} to ${max})`;
+  const allowed = min < 0 ? /^-?\d*$/ : /^\d*$/;
+  const valid = (text) => {
+    const value = Number(text);
+    return text !== "" && text !== "-" && value >= min && value <= max;
+  };
+
+  const edit = () => {
+    if (readout.querySelector("input")) return;
+    const shown = readout.textContent;
+    const input = document.createElement("input");
+    input.type = "text";
+    input.inputMode = "numeric";
+    input.value = get();
+    input.className = "value-input";
+    input.setAttribute("aria-label", label);
+    input.maxLength = String(max).length + (min < 0 ? 1 : 0);
+    readout.textContent = "";
+    readout.append(input, suffix);
+    input.focus();
+    input.select();
+
+    // Refuse keystrokes and pastes that would make the text non-numeric
+    let lastGood = input.value;
+    input.addEventListener("input", () => {
+      if (allowed.test(input.value)) {
+        lastGood = input.value;
+        input.removeAttribute("aria-invalid");
+      } else {
+        input.value = lastGood;
+      }
+    });
+
+    let done = false;
+    const finish = (apply) => {
+      if (done) return;
+      done = true;
+      readout.textContent = shown;
+      if (apply && valid(input.value)) set(Number(input.value));
+    };
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") finish(false);
+      if (e.key !== "Enter") return;
+      if (valid(input.value)) finish(true);
+      else input.setAttribute("aria-invalid", "true");
+    });
+    input.addEventListener("blur", () => finish(true));
+  };
+  readout.addEventListener("click", edit);
+  readout.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && e.target === readout) edit();
   });
 }
 
@@ -99,6 +184,9 @@ function renderSetTabs() {
   newTab.dataset.action = "new-set";
   newTab.textContent = "+ New";
   tabs.appendChild(newTab);
+  // Every set change (switch, rename, delete, import) re-renders the tabs, so
+  // this keeps the preview showing the set being edited
+  sendPreview();
 }
 
 function downloadJson(filename, value) {
@@ -242,23 +330,25 @@ function renderGroups() {
   const container = document.getElementById("groups-container");
   container.innerHTML = "";
 
+  const hideButton = (hidden, attrs) =>
+    `<button class="icon-btn${hidden ? " active" : ""}" data-action="toggle-hide" ${attrs} title="${hidden ? "Show" : "Hide"}" aria-pressed="${hidden}">${hidden ? "🙈" : "👁"}</button>`;
+
   editingGroups.forEach((group, groupIndex) => {
     const groupDiv = document.createElement("div");
     groupDiv.className = "group";
     groupDiv.dataset.groupIndex = groupIndex;
+    const groupAttrs = `data-group="${groupIndex}"`;
     groupDiv.innerHTML = `
-      <div class="group-header">
-        <span class="drag-handle">&#9776;</span>
-        <input type="text" value="${escapeHtml(group.label)}" placeholder="Group name" data-group="${groupIndex}" data-field="label">
-        <label>
-          <input type="checkbox" ${group.hide ? "checked" : ""} data-group="${groupIndex}" data-field="hide"> Hide
-        </label>
-        <button class="btn btn-danger btn-small" data-action="delete-group" data-group="${groupIndex}">Delete Group</button>
+      <div class="group-header${group.hide ? " is-hidden" : ""}">
+        <span class="drag-handle" title="Drag to reorder">&#9776;</span>
+        <input type="text" value="${escapeHtml(group.label)}" placeholder="Group name" ${groupAttrs} data-field="label">
+        ${hideButton(group.hide, groupAttrs)}
+        <button class="icon-btn delete" data-action="delete-group" ${groupAttrs} title="Delete group">✕</button>
       </div>
       <div class="group-content">
-        <div class="links-container" id="links-${groupIndex}" data-group="${groupIndex}"></div>
+        <div class="links-container" id="links-${groupIndex}" ${groupAttrs}></div>
         <div class="add-link-area">
-          <button class="btn btn-primary btn-small" data-action="add-link" data-group="${groupIndex}">Add Link</button>
+          <button class="link-add" data-action="add-link" ${groupAttrs}>+ Add link</button>
         </div>
       </div>
     `;
@@ -268,19 +358,16 @@ function renderGroups() {
     const linksContainer = document.getElementById(`links-${groupIndex}`);
     group.links.forEach((link, linkIndex) => {
       const linkDiv = document.createElement("div");
-      linkDiv.className = "link";
+      linkDiv.className = "link" + (link.hide ? " is-hidden" : "");
       linkDiv.dataset.groupIndex = groupIndex;
       linkDiv.dataset.linkIndex = linkIndex;
+      const linkAttrs = `data-group="${groupIndex}" data-link="${linkIndex}"`;
       linkDiv.innerHTML = `
-        <span class="drag-handle">&#9776;</span>
-        <input type="text" value="${escapeHtml(link.label)}" placeholder="Link name" data-group="${groupIndex}" data-link="${linkIndex}" data-field="label">
-        <input type="url" value="${escapeHtml(link.url)}" placeholder="https://example.com" data-group="${groupIndex}" data-link="${linkIndex}" data-field="url">
-        <label>
-          <input type="checkbox" ${link.hide ? "checked" : ""} data-group="${groupIndex}" data-link="${linkIndex}" data-field="hide"> Hide
-        </label>
-        <div class="link-actions">
-          <button class="btn btn-danger btn-small" data-action="delete-link" data-group="${groupIndex}" data-link="${linkIndex}">Delete</button>
-        </div>
+        <span class="drag-handle" title="Drag to reorder">&#9776;</span>
+        <input type="text" value="${escapeHtml(link.label)}" placeholder="Name" ${linkAttrs} data-field="label">
+        <input type="url" value="${escapeHtml(link.url)}" placeholder="https://example.com" ${linkAttrs} data-field="url">
+        ${hideButton(link.hide, linkAttrs)}
+        <button class="icon-btn delete" data-action="delete-link" ${linkAttrs} title="Delete link">✕</button>
       `;
       linksContainer.appendChild(linkDiv);
     });
@@ -293,8 +380,19 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
-function handleSettingChange(e) {
+async function handleSettingChange(e) {
   const key = SETTING_CHECKBOXES[e.target.id];
+  // Site icons need the optional favicon permission; Chrome asks for it
+  // here, while the click still counts as the user's gesture. Declined,
+  // the box goes back to off.
+  if (key === "showFavicons" && e.target.checked) {
+    const granted = await chrome.permissions.request(FAVICON_PERMISSION);
+    if (!granted) {
+      e.target.checked = false;
+      return;
+    }
+    faviconsAllowed = true;
+  }
   if (key) {
     meta.settings[key] = e.target.checked;
   }
@@ -328,12 +426,28 @@ function handleLinkChange(e) {
   scheduleSave();
 }
 
-function handleButtonClick(e) {
-  const action = e.target.dataset.action;
-  if (!action) return;
+// Toast with an Undo that re-applies restore to the set it came from; if
+// another set is open by then, the undo quietly does nothing
+function offerUndo(message, restore) {
+  const setName = editingSetName;
+  showStatus(message, "info", {
+    label: "Undo",
+    run: () => {
+      if (editingSetName !== setName) return;
+      restore();
+      renderGroups();
+      flushSave();
+    },
+  });
+}
 
-  const groupIndex = parseInt(e.target.dataset.group);
-  const linkIndex = parseInt(e.target.dataset.link);
+function handleButtonClick(e) {
+  const target = e.target.closest("[data-action]");
+  if (!target) return;
+  const action = target.dataset.action;
+
+  const groupIndex = parseInt(target.dataset.group);
+  const linkIndex = parseInt(target.dataset.link);
 
   switch (action) {
     case "add-group":
@@ -346,13 +460,25 @@ function handleButtonClick(e) {
       flushSave();
       break;
 
-    case "delete-group":
-      if (confirm("Are you sure you want to delete this group?")) {
-        editingGroups.splice(groupIndex, 1);
-        renderGroups();
-        flushSave();
-      }
+    case "delete-group": {
+      const [removed] = editingGroups.splice(groupIndex, 1);
+      renderGroups();
+      flushSave();
+      offerUndo(`Deleted "${removed.label}"`, () =>
+        editingGroups.splice(groupIndex, 0, removed),
+      );
       break;
+    }
+
+    case "toggle-hide": {
+      const item = Number.isNaN(linkIndex)
+        ? editingGroups[groupIndex]
+        : editingGroups[groupIndex].links[linkIndex];
+      item.hide = !item.hide;
+      renderGroups();
+      flushSave();
+      break;
+    }
 
     case "add-link":
       editingGroups[groupIndex].links.push({
@@ -364,13 +490,16 @@ function handleButtonClick(e) {
       flushSave();
       break;
 
-    case "delete-link":
-      if (confirm("Are you sure you want to delete this link?")) {
-        editingGroups[groupIndex].links.splice(linkIndex, 1);
-        renderGroups();
-        flushSave();
-      }
+    case "delete-link": {
+      const group = editingGroups[groupIndex];
+      const [removed] = group.links.splice(linkIndex, 1);
+      renderGroups();
+      flushSave();
+      offerUndo(`Deleted "${removed.label}"`, () =>
+        group.links.splice(linkIndex, 0, removed),
+      );
       break;
+    }
 
     case "clear-groups":
       if (confirm("Are you sure you want to clear all link groups?")) {
@@ -435,7 +564,7 @@ function handleButtonClick(e) {
           if (!choice) return;
           return exportJson(
             choice,
-            `tabby-set-${toFilename(editingSetName)}.json`,
+            `almanac-set-${toFilename(editingSetName)}.json`,
             { groups: editingGroups },
           );
         })
@@ -508,7 +637,8 @@ function handleButtonClick(e) {
             meta.setNames.forEach((name) => {
               sets[name] = (result[setKey(name)] || { groups: [] }).groups;
             });
-            return exportJson(choice, "tabby-backup.json", {
+            return exportJson(choice, "almanac-backup.json", {
+              schemaVersion: SCHEMA_VERSION,
               settings: meta.settings,
               sets,
             });
@@ -537,17 +667,17 @@ function handleButtonClick(e) {
 async function importAllData(data) {
   // A pending save could restore pre-import state under a stale key
   cancelPendingSave();
-  let importedSettings = { ...defaultSettings };
+  let importedSettings = upgradeImportedSettings({}, SCHEMA_VERSION);
   let importedSets;
   // Handle old array format
   if (Array.isArray(data)) {
     importedSets = { [DEFAULT_SET_NAME]: data };
   } else if (data && data.sets) {
-    importedSettings = { ...defaultSettings, ...data.settings };
+    importedSettings = upgradeImportedSettings(data.settings, data.schemaVersion);
     importedSets = data.sets;
   } else if (data && data.groups) {
     // Single-set format from before link sets existed
-    importedSettings = { ...defaultSettings, ...data.settings };
+    importedSettings = upgradeImportedSettings(data.settings, data.schemaVersion);
     importedSets = { [DEFAULT_SET_NAME]: data.groups };
   } else {
     throw new Error("Unrecognized data format");
@@ -567,7 +697,7 @@ async function importAllData(data) {
   const staleKeys = meta.setNames
     .filter((name) => !names.includes(name))
     .map(setKey);
-  meta = { settings: importedSettings, setNames: names };
+  meta = { schemaVersion: SCHEMA_VERSION, settings: importedSettings, setNames: names };
   const items = { [SYNC_META_KEY]: meta };
   names.forEach((name) => {
     items[setKey(name)] = { groups: importedSets[name] };
@@ -588,6 +718,225 @@ async function importAllData(data) {
   showStatus("Data imported successfully!", "success");
 }
 
+// ---- Look ----
+
+const STYLE_LABELS = { auto: "Auto", dark: "Dark", light: "Light", system: "System" };
+const CORNER_LABELS = { 0: "Square", 0.75: "Subtle", 1.75: "Round" };
+// The drawer needs to stay readable over any photo, so it's more opaque than
+// the panels it's styled after
+const DRAWER_ALPHA = "e6";
+const FIELD_BACKGROUND = { dark: "#0000004d", light: "#ffffff66" };
+
+// Segmented button rows: fill from [value, label] pairs, and mark the
+// button whose value matches as pressed
+const fillButtons = (id, entries) => {
+  document.getElementById(id).innerHTML = entries
+    .map(([value, label]) => `<button type="button" data-value="${value}">${escapeHtml(label)}</button>`)
+    .join("");
+};
+
+const setPressed = (id, value) => {
+  document.querySelectorAll(`#${id} button`).forEach((button) => {
+    button.setAttribute("aria-pressed", button.dataset.value === value);
+  });
+};
+
+const matchingPreset = (look) =>
+  LOOK_PRESETS.find((preset) => PRESET_KEYS.every((key) => preset[key] === look[key]),
+  );
+
+function renderLook() {
+  const look = meta.settings.look;
+  document.querySelectorAll("#look-layout button").forEach((button) => {
+    button.setAttribute("aria-pressed", button.dataset.layout === look.layout);
+  });
+  document.getElementById("look-attached").checked = look.attached;
+  document.querySelectorAll("#look-density button").forEach((button) => {
+    button.setAttribute("aria-pressed", button.dataset.density === look.density);
+  });
+  const current = matchingPreset(look);
+  document.querySelectorAll("#look-presets button").forEach((button) => {
+    button.setAttribute("aria-pressed", button.textContent === current?.name);
+  });
+  document.getElementById("look-custom").hidden = Boolean(current);
+  setPressed("look-style", look.style);
+  document.getElementById("look-blur").value = LOOK_BLURS.indexOf(look.blur);
+  document.getElementById("look-blur-value").textContent = look.blur ? `${look.blur}px` : "None";
+  setPressed("look-corners", String(look.corners));
+  applyDrawerTheme();
+}
+
+function updateLook(changes, { debounce = false } = {}) {
+  Object.assign(meta.settings.look, changes);
+  renderLook();
+  debounce ? scheduleSave() : flushSave();
+}
+
+function setupLook() {
+  document.getElementById("look-presets").innerHTML = LOOK_PRESETS.map(
+    (preset) => `<button type="button">${escapeHtml(preset.name)}</button>`,
+  ).join("");
+  fillButtons("look-style", LOOK_STYLES.map((s) => [s, STYLE_LABELS[s]]));
+  const blurSlider = document.getElementById("look-blur");
+  blurSlider.max = LOOK_BLURS.length - 1;
+  document.getElementById("look-blur-stops").innerHTML = LOOK_BLURS.map(
+    (_, i) => `<option value="${i}"></option>`,
+  ).join("");
+  fillButtons("look-corners", LOOK_CORNERS.map((em) => [em, CORNER_LABELS[em]]));
+
+  document.getElementById("look-layout").addEventListener("click", (e) => {
+    const layout = e.target.closest("button")?.dataset.layout;
+    if (layout) updateLook({ layout });
+  });
+  document.getElementById("look-attached").addEventListener("change", (e) =>
+    updateLook({ attached: e.target.checked }),
+  );
+  document.getElementById("look-density").addEventListener("click", (e) => {
+    const density = e.target.closest("button")?.dataset.density;
+    if (density) updateLook({ density });
+  });
+  document.getElementById("look-presets").addEventListener("click", (e) => {
+    const preset = LOOK_PRESETS.find((p) => p.name === e.target.closest("button")?.textContent);
+    if (!preset) return;
+    updateLook(Object.fromEntries(PRESET_KEYS.map((key) => [key, preset[key]])));
+  });
+  document.getElementById("look-style").addEventListener("click", (e) => {
+    const style = e.target.closest("button")?.dataset.value;
+    if (style) updateLook({ style });
+  });
+  // Debounced while dragging, like the size slider
+  blurSlider.addEventListener("input", (e) =>
+    updateLook({ blur: LOOK_BLURS[Number(e.target.value)] }, { debounce: true }),
+  );
+  document.getElementById("look-corners").addEventListener("click", (e) => {
+    const corners = e.target.closest("button")?.dataset.value;
+    if (corners !== undefined) updateLook({ corners: Number(corners) });
+  });
+  systemDark.addEventListener("change", renderLook);
+}
+
+// Styles the drawer after the current look over the preview photo
+function applyDrawerTheme() {
+  if (!previewRgb) return;
+  const look = meta.settings.look;
+  const colors = lookColors(look, previewRgb);
+  const root = document.documentElement.style;
+  root.setProperty("--drawer-background", colors.panel + DRAWER_ALPHA);
+  root.setProperty("--ink", colors.text);
+  root.setProperty("--field-background", FIELD_BACKGROUND[colors.resolved]);
+  root.setProperty("--blur", `${look.blur}px`);
+}
+
+// ---- Preview ----
+
+const PREVIEW_MARGIN_PX = 32;
+const previewImages = allBackgroundImages();
+let previewRgb = null;
+let previewImage = null;
+
+const previewFrame = () => document.getElementById("preview");
+
+function sendPreview() {
+  previewFrame().contentWindow?.postMessage(
+    {
+      type: "render",
+      settings: meta.settings,
+      groups: editingGroups,
+      setName: editingSetName,
+      setNames: meta.setNames,
+    },
+    "*",
+  );
+}
+
+function showPreviewImage(url) {
+  previewFrame().contentWindow?.postMessage({ type: "image", url }, "*");
+}
+
+// Renders the preview at full window size and scales it to fit beside the
+// drawer, so the layout inside matches a real tab exactly
+function fitPreview() {
+  const frame = previewFrame();
+  const stage = document.querySelector(".stage");
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  const scale = Math.min(
+    (stage.clientWidth - 2 * PREVIEW_MARGIN_PX) / width,
+    (stage.clientHeight - 2 * PREVIEW_MARGIN_PX) / height,
+  );
+  frame.style.width = `${width}px`;
+  frame.style.height = `${height}px`;
+  frame.style.transform = `scale(${scale})`;
+  frame.parentElement.style.width = `${width * scale}px`;
+  frame.parentElement.style.height = `${height * scale}px`;
+}
+
+function setupPreview() {
+  const select = document.getElementById("preview-image");
+  select.innerHTML = SEASONS.map((season) => {
+    const options = previewImages
+      .filter((url) => url.includes(`/${season}/`))
+      .map((url) => `<option value="${url}">${url.split("/").pop()}</option>`)
+      .join("");
+    return `<optgroup label="${season}">${options}</optgroup>`;
+  }).join("");
+  const step = (delta) => {
+    const i = previewImages.indexOf(previewImage);
+    showPreviewImage(previewImages[(i + delta + previewImages.length) % previewImages.length]);
+  };
+  select.addEventListener("change", (e) => showPreviewImage(e.target.value));
+  document.getElementById("preview-prev").addEventListener("click", () => step(-1));
+  document.getElementById("preview-next").addEventListener("click", () => step(1));
+  document.getElementById("preview-random").addEventListener("click", () =>
+    showPreviewImage(previewImages[Math.floor(Math.random() * previewImages.length)]),
+  );
+
+  window.addEventListener("message", (e) => {
+    if (e.source !== previewFrame().contentWindow) return;
+    if (e.data.type === "ready") {
+      sendPreview();
+    } else if (e.data.type === "image") {
+      previewImage = e.data.url;
+      previewRgb = e.data.rgb;
+      select.value = previewImage;
+      document.documentElement.style.setProperty("--image", `url(${previewImage})`);
+      renderLook();
+    }
+  });
+  window.addEventListener("resize", fitPreview);
+  fitPreview();
+}
+
+// ---- Drawer tabs ----
+
+const TAB_STORAGE_KEY = "settingsTab";
+
+function showTab(name) {
+  document.querySelectorAll(".tab").forEach((tab) => {
+    tab.setAttribute("aria-selected", tab.dataset.tab === name);
+  });
+  document.querySelectorAll("section[data-panel]").forEach((panel) => {
+    panel.hidden = panel.dataset.panel !== name;
+  });
+  // Remembering the tab is a convenience; storage can be unavailable
+  try {
+    localStorage.setItem(TAB_STORAGE_KEY, name);
+  } catch {}
+}
+
+function setupTabs() {
+  document.querySelector(".tabs").addEventListener("click", (e) => {
+    const name = e.target.closest(".tab")?.dataset.tab;
+    if (name) showTab(name);
+  });
+  // ?tab= opens a specific tab (the screenshot script uses it)
+  let saved = new URLSearchParams(location.search).get("tab");
+  try {
+    saved ??= localStorage.getItem(TAB_STORAGE_KEY);
+  } catch {}
+  showTab(document.querySelector(`.tab[data-tab="${saved}"]`) ? saved : "look");
+}
+
 async function init() {
   if (!isExtension) {
     showStatus(
@@ -603,9 +952,12 @@ async function init() {
     editingSetName = activeSetName;
     editingGroups = await loadSetGroups(editingSetName);
 
+    setupTabs();
+    setupLook();
     renderSettings();
     renderSetTabs();
     renderGroups();
+    setupPreview();
 
     // Best-effort flush of a debounced save if the page closes mid-typing
     window.addEventListener("beforeunload", () => {
@@ -623,6 +975,20 @@ async function init() {
 
     // Debounced while dragging, so the sliders don't burn write quota
     Object.entries(SETTING_SLIDERS).forEach(([id, key]) => {
+      const slider = document.getElementById(id);
+      makeValueEditable(document.getElementById(`${id}-value`), {
+        get: () => Math.round(meta.settings[key] * 100),
+        set: (percent) => {
+          meta.settings[key] = percent / 100;
+          slider.value = meta.settings[key];
+          renderScaleValue(id, key);
+          flushSave();
+        },
+        min: Math.round(slider.min * 100),
+        max: Math.round(slider.max * 100),
+        label: `${slider.labels[0]?.textContent ?? key} size in percent`,
+        suffix: "%",
+      });
       document.getElementById(id).addEventListener("input", (e) => {
         meta.settings[key] = parseFloat(e.target.value);
         renderScaleValue(id, key);

@@ -1,264 +1,201 @@
-const MAX_IMAGE_INDEX = 64;
-const MAX_CHRISTMAS_INDEX = 50;
+// The settings page embeds this page as its live preview (new-tab.html?preview)
+// and drives it with postMessage instead of storage, so edits show before the
+// debounced save lands. Preview → parent: { type: "ready" } once it's
+// listening, then { type: "image", url, rgb } whenever a photo is showing.
+// Parent → preview: { type: "render", settings, groups, setName, setNames } and
+// { type: "image", url }.
+// Only when actually framed: opened directly, parent is the page itself and
+// its own messages would loop back
+const PREVIEW =
+  new URLSearchParams(location.search).has("preview") && window.parent !== window;
 
-const getSeason = () => {
-  const now = new Date();
-  const month = now.getMonth() + 1;
-  const day = now.getDate();
-  if (month === 1) return "winter";
-  if (month === 2) return Math.random() < 0.8 ? "winter" : "spring";
-  if (month === 3) return Math.random() < 0.2 ? "winter" : "spring";
-  if (month === 4) return "spring";
-  if (month === 5) return Math.random() < 0.8 ? "spring" : "summer";
-  if (month === 6) return Math.random() < 0.2 ? "spring" : "summer";
-  if (month === 7) return "summer";
-  if (month === 8) return Math.random() < 0.8 ? "summer" : "autumn";
-  if (month === 9) return Math.random() < 0.2 ? "summer" : "autumn";
-  if (month === 10) return "autumn";
-  if (month === 11) return Math.random() < 0.8 ? "autumn" : "winter";
-  if (month === 12) {
-    if (day >= 1 && day <= 25 && Math.random() < day * 0.04) return "christmas";
-    return Math.random() < 0.2 ? "autumn" : "winter";
-  }
-  return "winter";
-};
+let currentSettings = null;
+let currentRgb = null;
+let setNames = [];
+let activeSetName = null;
 
-const getBackgroundImage = () => {
-  const randomCategory = getSeason();
-  const maxIndex = randomCategory === "christmas" ? MAX_CHRISTMAS_INDEX : MAX_IMAGE_INDEX;
-  const randomIndex = Math.floor(Math.random() * maxIndex) + 1;
-  return `images/${randomCategory}/img_${("" + randomIndex).padStart(2, "0")}.jpg`;
-};
+// The gear opens a menu: the link sets (when there's more than one to pick
+// from and links are showing), a divider, then Settings. With no sets to
+// offer it goes straight to settings.
+const menuToggle = () => document.getElementById("menu-toggle");
+const menu = () => document.getElementById("menu");
 
-const setBackgroundImage = (imageUrl) => {
-  document.documentElement.style.setProperty("--image", `url(${imageUrl})`);
-};
+const showsSets = () => currentSettings.showLinks && setNames.length > 1;
 
-const toHexPart = (value) => value.toString(16).padStart(2, "0");
-
-const rgbToHex = ({ red, green, blue }) =>
-  `#${toHexPart(red)}${toHexPart(green)}${toHexPart(blue)}`;
-
-const lightenColor = ({ red, green, blue }, factor) => ({
-  red: Math.min(255, Math.round(red + (255 - red) * factor)),
-  green: Math.min(255, Math.round(green + (255 - green) * factor)),
-  blue: Math.min(255, Math.round(blue + (255 - blue) * factor)),
-});
-
-const darkenColor = ({ red, green, blue }, factor) => ({
-  red: Math.max(0, Math.round(red * (1 - factor))),
-  green: Math.max(0, Math.round(green * (1 - factor))),
-  blue: Math.max(0, Math.round(blue * (1 - factor))),
-});
-
-const getColorsFromImage = async (imageUrl) => {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.crossOrigin = "Anonymous";
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
-      canvas.width = img.width;
-      canvas.height = img.height;
-      ctx.drawImage(img, 0, 0);
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const data = imageData.data;
-      const color = { red: 0, green: 0, blue: 0 };
-      for (let i = 0; i < data.length; i += 4) {
-        color.red += data[i];
-        color.green += data[i + 1];
-        color.blue += data[i + 2];
-      }
-
-      const pixelCount = data.length / 4;
-      const rgb = {
-        red: Math.round(color.red / pixelCount),
-        green: Math.round(color.green / pixelCount),
-        blue: Math.round(color.blue / pixelCount),
-      };
-
-      resolve({
-        light: rgbToHex(lightenColor(rgb, 0.4)),
-        dark: rgbToHex(darkenColor(rgb, 0.6)),
-      });
-    };
-    img.src = imageUrl;
-  });
-};
-
-const setTextColor = (color, property) => {
-  document.documentElement.style.setProperty(property, color);
-};
-
-const daysOfTheWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const months = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
-
-const getFormattedTime = (settings) => {
-  const now = new Date();
-  const dayOfTheWeek = daysOfTheWeek[now.getDay()];
-  const month = months[now.getMonth()];
-  const dayOfTheMonth = now.getDate();
-  let hours = now.getHours();
-  let suffix = "";
-  if (settings.twelveHourClock) {
-    suffix = hours < 12 ? " AM" : " PM";
-    hours = hours % 12 || 12;
-  }
-  const minutes = now.getMinutes();
-  const seconds = now.getSeconds();
-  // 12-hour times are conventionally unpadded
-  const formattedHours =
-    hours < 10 && !settings.twelveHourClock ? `0${hours}` : hours;
-  const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
-  const formattedSeconds = seconds < 10 ? `0${seconds}` : seconds;
-  const secondsPart = settings.showSeconds ? `:${formattedSeconds}` : "";
-  const datePart = `${dayOfTheWeek} ${month} ${dayOfTheMonth}`;
-  const timePart = `${formattedHours}:${formattedMinutes}${secondsPart}${suffix}`;
-  if (settings.showDate && settings.showTime) {
-    return `${datePart} \u2022 ${timePart}`;
-  }
-  return settings.showDate ? datePart : timePart;
-};
-
-function renderGroups(groups) {
-  const container = document.getElementById("link-groups");
-  container.innerHTML = "";
-
-  const visibleGroups = groups
-    .filter((group) => !group.hide)
-    .map((group) => ({
-      ...group,
-      links: group.links.filter((link) => !link.hide),
-    }))
-    .filter((group) => group.links.length > 0);
-
-  visibleGroups.forEach((group) => {
-    const groupDiv = document.createElement("div");
-    groupDiv.className = "group";
-
-    const label = document.createElement("label");
-    label.textContent = group.label;
-    groupDiv.appendChild(label);
-
-    const linksDiv = document.createElement("div");
-    linksDiv.className = "links";
-
-    group.links.forEach((link) => {
-      const a = document.createElement("a");
-      a.className = "link";
-      a.href = link.url;
-      a.textContent = link.label;
-      linksDiv.appendChild(a);
+function renderMenu() {
+  const el = menu();
+  el.innerHTML = "";
+  if (showsSets()) {
+    setNames.forEach((name) => {
+      const item = document.createElement("button");
+      item.className = "menu-item";
+      item.setAttribute("role", "menuitemradio");
+      item.setAttribute("aria-checked", name === activeSetName);
+      item.textContent = name;
+      item.addEventListener("click", () => switchSet(name));
+      el.appendChild(item);
     });
-
-    groupDiv.appendChild(linksDiv);
-    container.appendChild(groupDiv);
-  });
+    const divider = document.createElement("div");
+    divider.className = "menu-divider";
+    divider.setAttribute("role", "separator");
+    el.appendChild(divider);
+  }
+  const settings = document.createElement("button");
+  settings.className = "menu-item";
+  settings.setAttribute("role", "menuitem");
+  settings.textContent = "Settings";
+  settings.addEventListener("click", openSettings);
+  el.appendChild(settings);
 }
 
-function initSetSwitcher(setNames, activeSetName) {
-  const toggle = document.getElementById("set-switcher-toggle");
-  const menu = document.getElementById("set-switcher-menu");
-  toggle.textContent = activeSetName;
+function setMenuOpen(open) {
+  menu().hidden = !open;
+  menuToggle().setAttribute("aria-expanded", open);
+}
 
-  const renderMenu = (currentName) => {
-    menu.innerHTML = "";
-    setNames.forEach((name) => {
-      const item = document.createElement("a");
-      item.className =
-        "set-switcher-item" + (name === currentName ? " current" : "");
-      item.textContent = name;
-      item.addEventListener("click", async () => {
-        menu.hidden = true;
-        if (name === currentName) return;
-        await setActiveSetName(name);
-        toggle.textContent = name;
-        renderGroups(await loadSetGroups(name));
-        renderMenu(name);
-      });
-      menu.appendChild(item);
-    });
-  };
-  renderMenu(activeSetName);
+function openSettings() {
+  setMenuOpen(false);
+  chrome.runtime.openOptionsPage();
+}
 
-  toggle.addEventListener("click", (e) => {
-    e.preventDefault();
-    menu.hidden = !menu.hidden;
+async function switchSet(name) {
+  setMenuOpen(false);
+  if (name === activeSetName) return;
+  activeSetName = name;
+  await setActiveSetName(name);
+  showLinkGroups(await loadSetGroups(name));
+  renderMenu();
+}
+
+function initMenu() {
+  renderMenu();
+  menuToggle().addEventListener("click", () => {
+    if (!showsSets()) return openSettings();
+    setMenuOpen(menu().hidden);
+    if (!menu().hidden) menu().querySelector(".menu-item")?.focus();
   });
   document.addEventListener("click", (e) => {
-    if (!e.target.closest(".set-switcher")) {
-      menu.hidden = true;
+    if (!e.target.closest(".top-controls")) setMenuOpen(false);
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !menu().hidden) {
+      setMenuOpen(false);
+      menuToggle().focus();
     }
   });
 }
 
-function updateClock(settings) {
-  const clockSpan = document.querySelector("#clock span");
-  if (clockSpan) {
-    clockSpan.textContent = getFormattedTime(settings);
+const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+// Applies everything settings control; safe to call again with new settings.
+// Changes that move the panels (layout, attaching them to the corners)
+// animate: the panels glide and reshape into their new places (see the
+// view transition styles in panels.css).
+// Look settings that reshape the panels without moving the gear. Size is
+// left out: its slider fires on every step of a drag, and a transition per
+// step would stutter.
+const RESHAPING_KEYS = ["layout", "density", "corners"];
+
+function renderSettings(settings) {
+  const changed = (key) => currentSettings && currentSettings.look[key] !== settings.look[key];
+  const reshaped = RESHAPING_KEYS.some(changed);
+  const attachChanged = changed("attached");
+  if ((reshaped || attachChanged) && document.startViewTransition && !reducedMotion.matches) {
+    // Tells panels.css which panels move, so only those animate (the gear
+    // stays put when the panels reshape, the Center panel on an attach change)
+    const root = document.documentElement.classList;
+    root.toggle("moving-panels", reshaped);
+    root.toggle("moving-attach", attachChanged);
+    const transition = document.startViewTransition(() => applySettings(settings));
+    transition.finished.finally(() => root.remove("moving-panels", "moving-attach"));
+  } else {
+    applySettings(settings);
   }
+}
+
+function applySettings(settings) {
+  currentSettings = settings;
+  applyScales(settings);
+  applyLayout(settings.look);
+
+  document.body.classList.toggle("no-favicons", !settings.showFavicons);
+  // The menu's link sets only apply while links are showing
+  if (document.getElementById("menu")) renderMenu();
+  updatePanels();
+  updateClock(settings);
+
+  if (currentRgb) applyLook(settings.look, currentRgb);
+}
+
+// Shows or hides the panels for what there is to show. The links panel
+// hides when links are turned off or the current set has nothing visible
+// (an empty set, or every group and link hidden), and the layouts
+// rearrange around whatever's missing (see panels.css).
+function updatePanels() {
+  const settings = currentSettings;
+  const linksPanel = document.getElementById("link-groups");
+  const showLinks = settings.showLinks && linksPanel.childElementCount > 0;
+  const showClock = settings.showDate || settings.showTime;
+  linksPanel.style.display = showLinks ? "" : "none";
+  document.getElementById("clock").style.display = showClock ? "" : "none";
+  document.body.classList.toggle("no-links", !showLinks);
+  document.body.classList.toggle("no-clock", !showClock);
+  document.body.classList.toggle("nothing-shown", !showLinks && !showClock);
+}
+
+function showLinkGroups(groups) {
+  renderLinkGroups(groups);
+  updatePanels();
+}
+
+async function showPhoto(url) {
+  currentRgb = await showBackground(url, currentSettings.look);
+  if (PREVIEW) parent.postMessage({ type: "image", url, rgb: currentRgb }, "*");
+}
+
+function initPreview() {
+  // Look but don't touch: clicks would navigate the frame or open menus
+  document.addEventListener(
+    "click",
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    },
+    true,
+  );
+  window.addEventListener("message", async (e) => {
+    if (e.source !== parent) return;
+    const message = e.data;
+    if (message.type === "render") {
+      // Site icons may have just been allowed on the settings page
+      if (message.settings.showFavicons) await checkFaviconPermission();
+      setNames = message.setNames;
+      activeSetName = message.setName;
+      renderSettings(message.settings);
+      showLinkGroups(message.groups);
+    } else if (message.type === "image") {
+      showPhoto(message.url);
+    }
+  });
+  parent.postMessage({ type: "ready" }, "*");
 }
 
 async function init() {
   const meta = await loadMeta();
+  setNames = meta.setNames;
+  activeSetName = await getActiveSetName(setNames);
+  await checkFaviconPermission();
+  renderSettings(meta.settings);
+  setInterval(() => updateClock(currentSettings), 100);
 
-  // Each panel zooms independently off its own multiplier
-  document.documentElement.style.setProperty(
-    "--links-scale",
-    meta.settings.linksScale,
-  );
-  document.documentElement.style.setProperty(
-    "--clock-scale",
-    meta.settings.clockScale,
-  );
+  showLinkGroups(await loadSetGroups(activeSetName));
+  initMenu();
 
-  // Settings link
-  document.getElementById("settings-link").addEventListener("click", (e) => {
-    e.preventDefault();
-    chrome.runtime.openOptionsPage();
+  if (PREVIEW) initPreview();
+  await showPhoto(getBackgroundImage());
+  systemDark.addEventListener("change", () => {
+    if (currentRgb) applyLook(currentSettings.look, currentRgb);
   });
-
-  // Handle showLinks setting (the set switcher only affects links, so it
-  // hides along with them)
-  const linkGroupsSection = document.getElementById("link-groups");
-  const setSwitcher = document.getElementById("set-switcher");
-  if (!meta.settings.showLinks) {
-    linkGroupsSection.style.display = "none";
-    setSwitcher.style.display = "none";
-  } else {
-    const activeSetName = await getActiveSetName(meta.setNames);
-    renderGroups(await loadSetGroups(activeSetName));
-    initSetSwitcher(meta.setNames, activeSetName);
-  }
-
-  // The clock panel only shows when at least one of its segments does
-  const clockSection = document.getElementById("clock");
-  if (!meta.settings.showDate && !meta.settings.showTime) {
-    clockSection.style.display = "none";
-  } else {
-    updateClock(meta.settings);
-    setInterval(() => updateClock(meta.settings), 100);
-  }
-
-  // Set background image and colors
-  const imageUrl = getBackgroundImage();
-  setBackgroundImage(imageUrl);
-  const color = await getColorsFromImage(imageUrl);
-  setTextColor(color.light, "--text");
-  setTextColor(color.dark + "dd", "--panel-background");
 }
 
 document.addEventListener("DOMContentLoaded", init);

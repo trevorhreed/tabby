@@ -1,10 +1,13 @@
 {
   "manifest_version": 3,
-  "name": "Tabby",
-  "version": "0.0.3",
-  "description": "A beautiful new tab page and link manager with seasonal backgrounds and synchronized data",
+  "name": "Almanac (formerly Tabby)",
+  "version": "0.1.0",
+  "description": "The seasons, one tab at a time.",
   "permissions": [
     "storage"
+  ],
+  "optional_permissions": [
+    "favicon"
   ],
   "chrome_url_overrides": {
     "newtab": "new-tab.html"
