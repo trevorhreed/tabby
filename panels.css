@@ -327,16 +327,17 @@ body.nothing-shown .top-controls {
   }
 }
 
-/* Layout and attach changes run as a view transition (new-tab.js), and
+/* Layout, density, corner and attach changes run as a view transition (new-tab.js), and
    only panels that actually move take part: new-tab.js marks the root with
    the kind of change, and only those panels get a transition name. Anything
    unnamed stays live and simply doesn't change.
-   - Layout change: the links panel in Corners and the whole Center panel
-     share a name, so the frosted panel glides and reshapes from one to the
-     other while the clock flies alongside. The gear stays put.
+   - Layout, density or corner change: the links panel in Corners and the
+     whole Center panel share a name, so the frosted panel glides and
+     reshapes from one shape to the other while the clock follows. The gear
+     stays put.
    - Attach change: in Corners the links, clock and gear slide between
      floating and flush; in Center only the gear does. */
-:root.moving-layout {
+:root.moving-panels {
   & .link-groups {
     view-transition-name: panel;
   }
