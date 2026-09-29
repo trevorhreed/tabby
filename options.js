@@ -758,14 +758,9 @@ function renderLook() {
   });
   document.getElementById("look-custom").hidden = Boolean(current);
   setPressed("look-style", look.style);
-  // A blur saved off the list (from an older version) shows at the nearest stop
-  const blurIndex = LOOK_BLURS.reduce(
-    (best, px, i) => (Math.abs(px - look.blur) < Math.abs(LOOK_BLURS[best] - look.blur) ? i : best),
-    0,
-  );
-  document.getElementById("look-blur").value = blurIndex;
+  document.getElementById("look-blur").value = LOOK_BLURS.indexOf(look.blur);
   document.getElementById("look-blur-value").textContent = look.blur ? `${look.blur}px` : "None";
-  setPressed("look-corners", String(nearestStop(LOOK_CORNERS, look.corners)));
+  setPressed("look-corners", String(look.corners));
   applyDrawerTheme();
 }
 
