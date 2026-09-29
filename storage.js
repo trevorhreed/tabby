@@ -6,6 +6,8 @@
 //   chrome.storage.sync   tabbySet:<name>  { groups: [...] }
 //   chrome.storage.local  activeSet        set shown on this device (local is never synced)
 
+// The keys keep the extension's original name, Tabby: renaming them would
+// orphan every existing user's saved links
 const SYNC_META_KEY = "tabbyMeta";
 const SYNC_SET_PREFIX = "tabbySet:";
 const LEGACY_SYNC_KEY = "tabbyData";

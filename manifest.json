@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Tabby",
+  "name": "Almanac",
   "version": "0.1.0",
-  "description": "Your new tab is a blank page. Tabby swaps it for a seasonal photo and the links you actually use. No ads, no tracking, no sign-up.",
+  "description": "Your new tab is a blank page. Almanac swaps it for a seasonal photo and the links you actually use. No ads, no tracking, no sign-up.",
   "permissions": [
     "storage"
   ],

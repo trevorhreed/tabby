@@ -171,7 +171,7 @@ const getClockParts = (settings, stacked) => {
 // Chrome's cached icon for a page, via the favicon permission. Sites never
 // visited in this browser come back as a generic globe. The permission is
 // optional (a required one would make Chrome warn existing users, and
-// disable Tabby, on update), so it's asked for when site icons are turned
+// disable Almanac, on update), so it's asked for when site icons are turned
 // on, and each device may or may not have granted it. Null without it,
 // including outside the extension (the screenshot harness).
 const FAVICON_PERMISSION = { permissions: ["favicon"] };

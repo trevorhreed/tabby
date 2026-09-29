@@ -563,7 +563,7 @@ function handleButtonClick(e) {
           if (!choice) return;
           return exportJson(
             choice,
-            `tabby-set-${toFilename(editingSetName)}.json`,
+            `almanac-set-${toFilename(editingSetName)}.json`,
             { groups: editingGroups },
           );
         })
@@ -636,7 +636,7 @@ function handleButtonClick(e) {
             meta.setNames.forEach((name) => {
               sets[name] = (result[setKey(name)] || { groups: [] }).groups;
             });
-            return exportJson(choice, "tabby-backup.json", {
+            return exportJson(choice, "almanac-backup.json", {
               settings: meta.settings,
               sets,
             });
