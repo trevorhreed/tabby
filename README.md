@@ -33,9 +33,9 @@ render.js          Photo, tint, look, clock and link rendering shared by both pa
 panels.css         Panel, layout and transition styles shared by both pages
 storage.js         Sync storage layout, defaults and migrations
 images/            Photos by season: spring, summer, autumn, winter, christmas
-icons/             Extension icons
-scripts/           build-tints.sh (runs at publish), screenshots.sh (store screenshots)
-store/             Store listing copy, screenshots and promo images
+icons/             Extension icons: SVG sources and rendered PNGs
+scripts/           build-tints.sh (runs at publish), screenshots.sh (store images), icons.sh (icon PNGs)
+store/             Store listing copy, screenshots, promo tiles and promo.html (their source)
 ```
 
 ## Storage
