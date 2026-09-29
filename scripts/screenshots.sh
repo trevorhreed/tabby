@@ -36,15 +36,14 @@ shot() {
   echo "store/$1.png"
 }
 
-# One season per shot, each with a different layout, preset (Frosted, Milk
-# glass, Smoked, Heavy frost) and density to show the range
+# One season per shot, each in a different preset to show the range
 shot screenshot-new-tab-autumn new-tab.html 2026-10-14 \
-  '{"layout":"corners","style":"auto","blur":12,"corners":1.75}'
+  '{"layout":"corners","attached":true,"density":"comfortable","style":"auto","blur":12,"corners":1.75}'
 shot screenshot-new-tab-winter new-tab.html 2026-01-14 \
-  '{"layout":"center","style":"light","blur":24,"corners":1.75}'
+  '{"layout":"corners","attached":false,"density":"spacious","style":"light","blur":24,"corners":1.75}'
 shot screenshot-new-tab-spring new-tab.html 2026-04-14 \
-  '{"layout":"corners","style":"dark","blur":18,"corners":0.75,"density":"compact"}'
+  '{"layout":"corners","attached":true,"density":"compact","style":"dark","blur":24,"corners":0}'
 shot screenshot-new-tab-summer new-tab.html 2026-07-14 \
-  '{"layout":"center","style":"auto","blur":36,"corners":1.75,"density":"spacious"}'
+  '{"layout":"center","attached":true,"density":"spacious","style":"auto","blur":18,"corners":1.75}'
 shot screenshot-options options.html 2026-10-14 \
   '{"layout":"corners","style":"auto","blur":12,"corners":1.75}' tab=look

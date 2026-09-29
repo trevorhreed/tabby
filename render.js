@@ -269,25 +269,46 @@ const LOOK_LAYOUTS = ["corners", "center"];
 // Blur choices in px; the settings slider steps through these
 const LOOK_BLURS = [0, 6, 12, 18, 24, 36, 48, 72];
 // Corner radii in em, spaced so each looks clearly different on a big panel
-const LOOK_CORNERS = [0, 0.75, 1.75, 4];
+const LOOK_CORNERS = [0, 0.75, 1.75];
 
 // The entry in stops closest to value, for saved values from older versions
 // that aren't on the current list
 const nearestStop = (stops, value) =>
   stops.reduce((best, stop) => (Math.abs(stop - value) < Math.abs(best - value) ? stop : best));
-// Each preset differs from the others in at least two of style, blur and
-// corners, and is named for how it looks rather than for one setting (the
-// Style and Corners controls already cover "Follow system", "Square" and
-// "Pill" on their own). Frosted matches the default look.
+// Each preset is a whole look (every look setting except size, which
+// depends on the screen), so no two resemble each other: together they
+// cover both layouts, attached and floating, every density and every
+// style. Frosted matches the default look.
 const LOOK_PRESETS = [
-  { name: "Frosted", style: "auto", blur: 12, corners: 1.75 },
-  { name: "Clear glass", style: "auto", blur: 6, corners: 0.75 },
-  { name: "Heavy frost", style: "auto", blur: 36, corners: 1.75 },
-  { name: "Smoked", style: "dark", blur: 18, corners: 0.75 },
-  { name: "Milk glass", style: "light", blur: 24, corners: 1.75 },
-  { name: "Pebble", style: "auto", blur: 18, corners: 4 },
-  { name: "Slate", style: "dark", blur: 24, corners: 0 },
+  {
+    name: "Frosted",
+    layout: "corners", attached: true, density: "comfortable",
+    style: "auto", blur: 12, corners: 1.75,
+  },
+  {
+    name: "Focus",
+    layout: "center", attached: true, density: "spacious",
+    style: "auto", blur: 18, corners: 1.75,
+  },
+  {
+    name: "Clear",
+    layout: "center", attached: true, density: "compact",
+    style: "auto", blur: 6, corners: 0.75,
+  },
+  {
+    name: "Slate",
+    layout: "corners", attached: true, density: "compact",
+    style: "dark", blur: 24, corners: 0,
+  },
+  {
+    name: "Milk glass",
+    layout: "corners", attached: false, density: "spacious",
+    style: "light", blur: 24, corners: 1.75,
+  },
 ];
+// The look settings a preset sets, which is also what has to match for a
+// look to count as that preset
+const PRESET_KEYS = ["layout", "attached", "density", "style", "blur", "corners"];
 // Relative luminance above this means the photo is bright enough that a
 // light panel with dark text reads better than the usual dark panel
 const LIGHT_PANEL_THRESHOLD = 0.45;

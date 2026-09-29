@@ -708,24 +708,28 @@ async function importAllData(data) {
 // ---- Look ----
 
 const STYLE_LABELS = { auto: "Auto", dark: "Dark", light: "Light", system: "System" };
-const CORNER_LABELS = { 0: "Square", 0.75: "Subtle", 1.75: "Round", 4: "Pill" };
-const CUSTOM_PRESET = "Custom";
+const CORNER_LABELS = { 0: "Square", 0.75: "Subtle", 1.75: "Round" };
 // The drawer needs to stay readable over any photo, so it's more opaque than
 // the panels it's styled after
 const DRAWER_ALPHA = "e6";
 const FIELD_BACKGROUND = { dark: "#0000004d", light: "#ffffff66" };
 
-const fillSelect = (select, entries) => {
-  select.innerHTML = entries
-    .map(([value, label]) => `<option value="${value}">${escapeHtml(label)}</option>`)
+// Segmented button rows: fill from [value, label] pairs, and mark the
+// button whose value matches as pressed
+const fillButtons = (id, entries) => {
+  document.getElementById(id).innerHTML = entries
+    .map(([value, label]) => `<button type="button" data-value="${value}">${escapeHtml(label)}</button>`)
     .join("");
 };
 
+const setPressed = (id, value) => {
+  document.querySelectorAll(`#${id} button`).forEach((button) => {
+    button.setAttribute("aria-pressed", button.dataset.value === value);
+  });
+};
+
 const matchingPreset = (look) =>
-  LOOK_PRESETS.find((preset) =>
-    preset.style === look.style &&
-    preset.blur === look.blur &&
-    preset.corners === nearestStop(LOOK_CORNERS, look.corners),
+  LOOK_PRESETS.find((preset) => PRESET_KEYS.every((key) => preset[key] === look[key]),
   );
 
 function renderLook() {
@@ -734,14 +738,15 @@ function renderLook() {
     button.setAttribute("aria-pressed", button.dataset.layout === look.layout);
   });
   document.getElementById("look-attached").checked = look.attached;
-  // In Center only the gear is in a corner, which isn't obvious from the label
-  document.getElementById("look-attached-hint").textContent =
-    look.layout === "center" ? "The gear sits flush in the top-right corner of the screen" : "";
   document.querySelectorAll("#look-density button").forEach((button) => {
     button.setAttribute("aria-pressed", button.dataset.density === look.density);
   });
-  document.getElementById("look-preset").value = matchingPreset(look)?.name ?? CUSTOM_PRESET;
-  document.getElementById("look-style").value = look.style;
+  const current = matchingPreset(look);
+  document.querySelectorAll("#look-presets button").forEach((button) => {
+    button.setAttribute("aria-pressed", button.textContent === current?.name);
+  });
+  document.getElementById("look-custom").hidden = Boolean(current);
+  setPressed("look-style", look.style);
   // A blur saved off the list (from an older version) shows at the nearest stop
   const blurIndex = LOOK_BLURS.reduce(
     (best, px, i) => (Math.abs(px - look.blur) < Math.abs(LOOK_BLURS[best] - look.blur) ? i : best),
@@ -749,7 +754,7 @@ function renderLook() {
   );
   document.getElementById("look-blur").value = blurIndex;
   document.getElementById("look-blur-value").textContent = look.blur ? `${look.blur}px` : "None";
-  document.getElementById("look-corners").value = nearestStop(LOOK_CORNERS, look.corners);
+  setPressed("look-corners", String(nearestStop(LOOK_CORNERS, look.corners)));
   applyDrawerTheme();
 }
 
@@ -760,20 +765,16 @@ function updateLook(changes, { debounce = false } = {}) {
 }
 
 function setupLook() {
-  fillSelect(document.getElementById("look-preset"), [
-    [CUSTOM_PRESET, CUSTOM_PRESET],
-    ...LOOK_PRESETS.map((preset) => [preset.name, preset.name]),
-  ]);
-  fillSelect(document.getElementById("look-style"), LOOK_STYLES.map((s) => [s, STYLE_LABELS[s]]));
+  document.getElementById("look-presets").innerHTML = LOOK_PRESETS.map(
+    (preset) => `<button type="button">${escapeHtml(preset.name)}</button>`,
+  ).join("");
+  fillButtons("look-style", LOOK_STYLES.map((s) => [s, STYLE_LABELS[s]]));
   const blurSlider = document.getElementById("look-blur");
   blurSlider.max = LOOK_BLURS.length - 1;
   document.getElementById("look-blur-stops").innerHTML = LOOK_BLURS.map(
     (_, i) => `<option value="${i}"></option>`,
   ).join("");
-  fillSelect(
-    document.getElementById("look-corners"),
-    LOOK_CORNERS.map((em) => [em, CORNER_LABELS[em]]),
-  );
+  fillButtons("look-corners", LOOK_CORNERS.map((em) => [em, CORNER_LABELS[em]]));
 
   document.getElementById("look-layout").addEventListener("click", (e) => {
     const layout = e.target.closest("button")?.dataset.layout;
@@ -786,22 +787,23 @@ function setupLook() {
     const density = e.target.closest("button")?.dataset.density;
     if (density) updateLook({ density });
   });
-  document.getElementById("look-preset").addEventListener("change", (e) => {
-    const preset = LOOK_PRESETS.find((p) => p.name === e.target.value);
+  document.getElementById("look-presets").addEventListener("click", (e) => {
+    const preset = LOOK_PRESETS.find((p) => p.name === e.target.closest("button")?.textContent);
     if (!preset) return;
-    const { name, ...look } = preset;
-    updateLook(look);
+    updateLook(Object.fromEntries(PRESET_KEYS.map((key) => [key, preset[key]])));
   });
-  document.getElementById("look-style").addEventListener("change", (e) =>
-    updateLook({ style: e.target.value }),
-  );
+  document.getElementById("look-style").addEventListener("click", (e) => {
+    const style = e.target.closest("button")?.dataset.value;
+    if (style) updateLook({ style });
+  });
   // Debounced while dragging, like the size slider
   blurSlider.addEventListener("input", (e) =>
     updateLook({ blur: LOOK_BLURS[Number(e.target.value)] }, { debounce: true }),
   );
-  document.getElementById("look-corners").addEventListener("change", (e) =>
-    updateLook({ corners: Number(e.target.value) }),
-  );
+  document.getElementById("look-corners").addEventListener("click", (e) => {
+    const corners = e.target.closest("button")?.dataset.value;
+    if (corners !== undefined) updateLook({ corners: Number(corners) });
+  });
   systemDark.addEventListener("change", renderLook);
 }
 
