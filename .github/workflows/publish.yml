@@ -7,18 +7,26 @@ name: Publish to Chrome Web Store
 # with the "Submit for review" workflow. Which one happens, in order:
 #   1. Run by hand: the "mode" input (draft, submit or auto).
 #   2. The merged PR's label: "release: draft" or "release: submit".
-#   3. Auto: draft if store/ or the manifest's permissions changed since the
-#      last upload (tagged v<version>), or if there's no earlier upload to
-#      compare with; otherwise submit.
+#   3. Auto: draft if store/ or icons/ changed since the last upload (tagged
+#      v<version>), or if there's no earlier upload to compare with;
+#      otherwise submit.
 
 on:
   push:
     branches: [release]
-    # Store listing assets and docs aren't in the zip, so changes to only
-    # these would publish an identical extension under a new version.
-    paths-ignore:
-      - "store/**"
-      - "**.md"
+    # Only what ends up in the package: changes to anything else (store
+    # assets, docs, workflows, other scripts) would publish an identical
+    # extension under a new version. build-tints.sh and tints.html make the
+    # package's tints.json.
+    paths:
+      - "manifest.json"
+      - "*.html"
+      - "*.js"
+      - "*.css"
+      - "images/**"
+      - "icons/**"
+      - "scripts/build-tints.sh"
+      - "scripts/tints.html"
   workflow_dispatch:
     inputs:
       mode:
@@ -57,15 +65,12 @@ jobs:
           fi
           if [ "$MODE" = auto ]; then
             LAST=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)
-            permissions() { git show "$1:manifest.json" | jq -c '[.permissions, .optional_permissions, .host_permissions]'; }
             if [ -z "$LAST" ]; then
               MODE=draft; REASON="no earlier upload tag to compare with"
-            elif ! git diff --quiet "$LAST" HEAD -- store/; then
-              MODE=draft; REASON="store/ changed since $LAST"
-            elif [ "$(permissions "$LAST")" != "$(permissions HEAD)" ]; then
-              MODE=draft; REASON="manifest permissions changed since $LAST"
+            elif ! git diff --quiet "$LAST" HEAD -- store/ icons/; then
+              MODE=draft; REASON="store/ or icons/ changed since $LAST"
             else
-              MODE=submit; REASON="no store or permission changes since $LAST"
+              MODE=submit; REASON="no store/ or icons/ changes since $LAST"
             fi
           fi
           echo "mode=$MODE" >> "$GITHUB_OUTPUT"

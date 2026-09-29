@@ -18,9 +18,9 @@ Users' links live in `chrome.storage.sync` (`tabbyMeta`, `tabbySet:<name>`) and 
 
 ## Releasing
 
-Merging to `release` uploads a new version (`.github/workflows/publish.yml`), then submits it for review or leaves it as a dashboard draft. Draft is needed when a release changes anything the store API can't update: listing text, screenshots or promo images (`store/`), or permissions (which change the Privacy practices tab).
+Merging extension content (manifest, pages, scripts, styles, images, icons) to `release` uploads a new version (`.github/workflows/publish.yml`), then submits it for review or leaves it as a dashboard draft. Changes to anything else, like `store/`, docs or workflows, don't publish. Draft is needed when the dashboard needs updating first, which the store API can't do: listing text, screenshots or promo images (`store/`), the icon (`icons/`), or permissions (the Privacy practices tab).
 
-- Before merging to `release`, check for those changes and label the PR `release: draft` or `release: submit`. With no label the workflow decides the same way itself (draft if `store/` or manifest permissions changed since the last `v*` tag).
+- Before merging to `release`, check for those changes and label the PR `release: draft` or `release: submit`. With no label the workflow drafts if `store/` or `icons/` changed since the last `v*` tag, so a permissions change needs the `release: draft` label.
 - After a draft upload, tell the user exactly what to change in the dashboard, pointing at `store/LISTING.md` and the files in `store/`. Once they confirm it's done, run `gh workflow run submit.yml`.
 - To upload again by hand: `gh workflow run publish.yml -f mode=draft` (or `submit`, `auto`).
 - The run's summary says which mode it chose and why: `gh run view <id>`.
