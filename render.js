@@ -169,11 +169,22 @@ const getClockParts = (settings, stacked) => {
 };
 
 // Chrome's cached icon for a page, via the favicon permission. Sites never
-// visited in this browser come back as a generic globe. Null outside the
-// extension (e.g. the screenshot harness), where _favicon doesn't exist.
+// visited in this browser come back as a generic globe. The permission is
+// optional (a required one would make Chrome warn existing users, and
+// disable Tabby, on update), so it's asked for when site icons are turned
+// on, and each device may or may not have granted it. Null without it,
+// including outside the extension (the screenshot harness).
+const FAVICON_PERMISSION = { permissions: ["favicon"] };
 const FAVICON_SIZE_PX = 32;
+let faviconsAllowed = false;
+
+async function checkFaviconPermission() {
+  faviconsAllowed = Boolean(await chrome.permissions?.contains(FAVICON_PERMISSION));
+  return faviconsAllowed;
+}
+
 function faviconUrl(pageUrl) {
-  if (!chrome.runtime?.getURL) return null;
+  if (!faviconsAllowed || !chrome.runtime?.getURL) return null;
   const url = new URL(chrome.runtime.getURL("/_favicon/"));
   url.searchParams.set("pageUrl", pageUrl);
   url.searchParams.set("size", FAVICON_SIZE_PX);

@@ -85,6 +85,8 @@
 
   window.chrome = {
     storage: { sync: area("sync"), local: area("local") },
+    // Grants the optional favicon permission, so turning site icons on works
+    permissions: { contains: async () => true, request: async () => true },
     runtime: {
       lastError: undefined,
       openOptionsPage() {},

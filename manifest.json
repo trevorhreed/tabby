@@ -1,10 +1,12 @@
 {
   "manifest_version": 3,
   "name": "Tabby",
-  "version": "0.0.3",
-  "description": "A beautiful new tab page and link manager with seasonal backgrounds and synchronized data",
+  "version": "0.1.0",
+  "description": "Your new tab is a blank page. Tabby swaps it for a seasonal photo and the links you actually use. No ads, no tracking, no sign-up.",
   "permissions": [
-    "storage",
+    "storage"
+  ],
+  "optional_permissions": [
     "favicon"
   ],
   "chrome_url_overrides": {
