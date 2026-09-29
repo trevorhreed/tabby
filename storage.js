@@ -26,7 +26,7 @@ const defaultSettings = {
   showSeconds: false,
   // Size multiplier for both new-tab panels, up to MAX_SCALE
   scale: 1,
-  // Panel look; the Frosted preset (see LOOK_PRESETS in render.js)
+  // Panel look; the Frost preset (see LOOK_PRESETS in render.js)
   look: {
     layout: "corners",
     style: "auto",
