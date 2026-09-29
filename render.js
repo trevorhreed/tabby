@@ -277,13 +277,25 @@ const nearestStop = (stops, value) =>
   stops.reduce((best, stop) => (Math.abs(stop - value) < Math.abs(best - value) ? stop : best));
 // Each preset is a whole look (every look setting except size, which
 // depends on the screen), so no two resemble each other: together they
-// cover both layouts, attached and floating, every density and every
-// style. Frosted matches the default look.
+// cover both layouts, attached and floating, every density, dark and
+// light, and every corner shape.
+// Three per layout, so the settings' three-across grid reads as a row of
+// Corners looks over a row of Center looks. Frosted is the default look.
 const LOOK_PRESETS = [
   {
     name: "Frosted",
     layout: "corners", attached: true, density: "comfortable",
     style: "auto", blur: 12, corners: 1.75,
+  },
+  {
+    name: "Slate",
+    layout: "corners", attached: true, density: "compact",
+    style: "dark", blur: 24, corners: 0,
+  },
+  {
+    name: "Milk glass",
+    layout: "corners", attached: false, density: "spacious",
+    style: "light", blur: 24, corners: 1.75,
   },
   {
     name: "Focus",
@@ -296,14 +308,9 @@ const LOOK_PRESETS = [
     style: "auto", blur: 6, corners: 0.75,
   },
   {
-    name: "Slate",
-    layout: "corners", attached: true, density: "compact",
-    style: "dark", blur: 24, corners: 0,
-  },
-  {
-    name: "Milk glass",
-    layout: "corners", attached: false, density: "spacious",
-    style: "light", blur: 24, corners: 1.75,
+    name: "Paper",
+    layout: "center", attached: false, density: "comfortable",
+    style: "light", blur: 48, corners: 0,
   },
 ];
 // The look settings a preset sets, which is also what has to match for a
