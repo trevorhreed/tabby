@@ -1,5 +1,16 @@
 name: Publish to Chrome Web Store
 
+# Uploads a new version on every push to release, then either submits it for
+# review or leaves it as a draft in the developer dashboard. Draft is for
+# releases that need dashboard changes first (listing text, images, privacy
+# practices), which the store's API can't make; submit the draft afterwards
+# with the "Submit for review" workflow. Which one happens, in order:
+#   1. Run by hand: the "mode" input (draft, submit or auto).
+#   2. The merged PR's label: "release: draft" or "release: submit".
+#   3. Auto: draft if store/ or the manifest's permissions changed since the
+#      last upload (tagged v<version>), or if there's no earlier upload to
+#      compare with; otherwise submit.
+
 on:
   push:
     branches: [release]
@@ -8,23 +19,71 @@ on:
     paths-ignore:
       - "store/**"
       - "**.md"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "draft uploads without submitting; submit sends it for review; auto decides"
+        type: choice
+        options: [auto, draft, submit]
+        default: auto
+
+permissions:
+  # tag each upload, and read the merged PR's labels
+  contents: write
+  pull-requests: read
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # full history and tags, to compare with the last upload
+          fetch-depth: 0
+
+      - name: Decide draft or submit
+        id: mode
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INPUT_MODE: ${{ inputs.mode }}
+        run: |
+          MODE="${INPUT_MODE:-auto}"
+          REASON="set when run by hand"
+          if [ "$MODE" = auto ] && [ "${{ github.event_name }}" = push ]; then
+            LABELS=$(gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/pulls" --jq '.[0].labels[].name' 2>/dev/null || true)
+            if echo "$LABELS" | grep -qx "release: draft"; then MODE=draft; REASON='PR labeled "release: draft"'
+            elif echo "$LABELS" | grep -qx "release: submit"; then MODE=submit; REASON='PR labeled "release: submit"'
+            fi
+          fi
+          if [ "$MODE" = auto ]; then
+            LAST=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)
+            permissions() { git show "$1:manifest.json" | jq -c '[.permissions, .optional_permissions, .host_permissions]'; }
+            if [ -z "$LAST" ]; then
+              MODE=draft; REASON="no earlier upload tag to compare with"
+            elif ! git diff --quiet "$LAST" HEAD -- store/; then
+              MODE=draft; REASON="store/ changed since $LAST"
+            elif [ "$(permissions "$LAST")" != "$(permissions HEAD)" ]; then
+              MODE=draft; REASON="manifest permissions changed since $LAST"
+            else
+              MODE=submit; REASON="no store or permission changes since $LAST"
+            fi
+          fi
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+          echo "Mode: $MODE ($REASON)"
+          echo "**$MODE**: $REASON" >> "$GITHUB_STEP_SUMMARY"
 
       # The patch version is the workflow run number: always increasing, so
       # every publish gets a fresh version without pushing a bump commit back
       # to release (the branch ruleset only allows changes via pull request).
       # The manifest's major.minor is kept; bump those in the repo as needed.
       - name: Set version from run number
+        id: version
         run: |
           VERSION=$(jq -r .version manifest.json)
           MAJOR_MINOR=$(echo "$VERSION" | cut -d. -f1,2)
           NEW_VERSION="${MAJOR_MINOR}.${{ github.run_number }}"
           jq --arg v "$NEW_VERSION" '.version = $v' manifest.json > manifest.tmp && mv manifest.tmp manifest.json
+          echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
           echo "Version: $VERSION -> $NEW_VERSION"
 
       - name: Precompute wallpaper tints
@@ -40,10 +99,18 @@ jobs:
             -x "store/*" \
             -x "scripts/*"
 
-      - name: Upload and publish
-        run: npx -y chrome-webstore-upload-cli@3.5.0 upload --source extension.zip --auto-publish --max-await-in-progress 300
+      # Without a command the CLI uploads and submits; "upload" only uploads
+      - name: Upload${{ steps.mode.outputs.mode == 'submit' && ' and submit for review' || ' as a draft' }}
+        run: npx -y chrome-webstore-upload-cli@3.5.0 ${{ steps.mode.outputs.mode == 'draft' && 'upload' || '' }} --source extension.zip --max-await-in-progress 300
         env:
           EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
           CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
           CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
           REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+
+      # Marks what was uploaded, so the next run's auto mode can tell whether
+      # store content changed since
+      - name: Tag the upload
+        run: |
+          git tag "v${{ steps.version.outputs.version }}"
+          git push origin "v${{ steps.version.outputs.version }}"

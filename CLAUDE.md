@@ -15,3 +15,12 @@ Users' links live in `chrome.storage.sync` (`tabbyMeta`, `tabbySet:<name>`) and 
 - Never rename or delete storage keys. Older versions on other devices still read them.
 - Never write or delete user data during load.
 - Test changes against data saved by the released version, not only fresh installs.
+
+## Releasing
+
+Merging to `release` uploads a new version (`.github/workflows/publish.yml`), then submits it for review or leaves it as a dashboard draft. Draft is needed when a release changes anything the store API can't update: listing text, screenshots or promo images (`store/`), or permissions (which change the Privacy practices tab).
+
+- Before merging to `release`, check for those changes and label the PR `release: draft` or `release: submit`. With no label the workflow decides the same way itself (draft if `store/` or manifest permissions changed since the last `v*` tag).
+- After a draft upload, tell the user exactly what to change in the dashboard, pointing at `store/LISTING.md` and the files in `store/`. Once they confirm it's done, run `gh workflow run submit.yml`.
+- To upload again by hand: `gh workflow run publish.yml -f mode=draft` (or `submit`, `auto`).
+- The run's summary says which mode it chose and why: `gh run view <id>`.
