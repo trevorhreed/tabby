@@ -28,7 +28,9 @@ for page in "$work"/*.html; do
   sed -i.bak 's#<head>#<head><script src="stub.js"></script>#' "$page"
 done
 
-cp store/promo.html "$work/promo.html"
+# promo.html's paths are relative to store/, like in the repo
+mkdir "$work/store"
+cp store/promo.html "$work/store/promo.html"
 
 # render <output path> <width,height> <url>
 render() {
@@ -49,7 +51,7 @@ shot() {
 caption() {
   cp "store/$1.png" "$work/raw-$1.png"
   text=$(printf %s "$2" | jq -sRr @uri)
-  render "$PWD/store/$1.png" "$SIZE" "file://$work/promo.html?tile=caption&shot=raw-$1.png&caption=$text&backdrop=$3"
+  render "$PWD/store/$1.png" "$SIZE" "file://$work/store/promo.html?tile=caption&shot=../raw-$1.png&caption=$text&backdrop=../$3"
   echo "store/$1.png (captioned)"
 }
 
@@ -72,7 +74,7 @@ shot screenshot-options options.html 2026-01-14 62 \
 caption screenshot-new-tab-summer "Open a tab. Step outside." images/winter/img_21.jpg
 caption screenshot-new-tab-autumn "The seasons, one tab at a time." images/spring/img_30.jpg
 
-render "$PWD/store/promo-marquee-1400x560.png" 1400,560 "file://$work/promo.html?tile=marquee"
+render "$PWD/store/promo-marquee-1400x560.png" 1400,560 "file://$work/store/promo.html?tile=marquee"
 echo "store/promo-marquee-1400x560.png"
-render "$PWD/store/promo-small-440x280.png" 440,280 "file://$work/promo.html?tile=small"
+render "$PWD/store/promo-small-440x280.png" 440,280 "file://$work/store/promo.html?tile=small"
 echo "store/promo-small-440x280.png"
