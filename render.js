@@ -232,7 +232,7 @@ function updateClock(settings) {
   const parts = [];
   if (settings.showDate) parts.push(`<span class="clock-date">${date}</span>`);
   if (settings.showTime) {
-    const suffixPart = suffix ? ` <span class="clock-suffix">${suffix}</span>` : "";
+    const suffixPart = suffix ? `<span class="clock-suffix">${suffix}</span>` : "";
     parts.push(`<span class="clock-time">${time}${suffixPart}</span>`);
   }
   const html = parts.join("");

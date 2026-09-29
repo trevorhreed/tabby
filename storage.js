@@ -21,7 +21,7 @@ const defaultSettings = {
   showTime: true,
   twelveHourClock: true,
   showFavicons: false,
-  showSeconds: true,
+  showSeconds: false,
   // Size multiplier for both new-tab panels, up to MAX_SCALE
   scale: 1,
   // Panel look; the Frosted preset (see LOOK_PRESETS in render.js)
