@@ -10,7 +10,6 @@ Your new tab is a blank page. Almanac swaps it for a seasonal photo and the link
 ## Detailed Description
 
 **Your new tab could look a lot better.**
-
 Almanac fills it with a full-screen photo that follows the seasons, plus the links you actually click.
 
 🍂 **Photos that follow the calendar**
