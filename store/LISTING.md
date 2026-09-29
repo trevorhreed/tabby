@@ -4,8 +4,7 @@ ID: ohdgighchcjhbbefopcoljmjaaodngcn
 
 ## Short Description (132 characters max)
 The store takes this from `description` in manifest.json, so change it there; it's copied here for reference.
-
-Your new tab is a blank page. Almanac swaps it for a seasonal photo and the links you actually use. No ads, no tracking, no sign-up.
+The seasons, one tab at a time.
 
 ## Detailed Description
 

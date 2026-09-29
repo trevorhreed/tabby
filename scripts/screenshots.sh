@@ -1,8 +1,10 @@
 #!/bin/sh
-# Regenerates the Chrome Web Store screenshots in store/ from the real pages,
-# rendered as plain files with a stubbed chrome API (screenshot-stub.js).
-# The store's API can't update listing images, so upload the results in the
-# developer dashboard afterwards. Set CHROME if Chrome isn't in the usual place.
+# Regenerates the Chrome Web Store screenshots and promo tiles in store/.
+# Screenshots come from the real pages, rendered as plain files with a
+# stubbed chrome API (screenshot-stub.js); two get a caption added using
+# store/promo.html, which also draws the promo tiles. The store's API can't
+# update listing images, so upload the results in the developer dashboard
+# afterwards. Set CHROME if Chrome isn't in the usual place.
 set -eu
 cd "$(dirname "$0")/.."
 
@@ -26,14 +28,29 @@ for page in "$work"/*.html; do
   sed -i.bak 's#<head>#<head><script src="stub.js"></script>#' "$page"
 done
 
+cp store/promo.html "$work/promo.html"
+
+# render <output path> <width,height> <url>
+render() {
+  "$CHROME" --headless=new --disable-gpu --hide-scrollbars --allow-file-access-from-files \
+    --window-size="$2" --virtual-time-budget="$TIME_BUDGET_MS" \
+    --screenshot="$1" "$3" 2>/dev/null
+}
+
 # shot <name> <page> <date> <photo> <look json> [extra query]
 shot() {
   look=$(printf %s "$5" | jq -sRr @uri)
-  "$CHROME" --headless=new --disable-gpu --hide-scrollbars --allow-file-access-from-files \
-    --window-size="$SIZE" --virtual-time-budget="$TIME_BUDGET_MS" \
-    --screenshot="$PWD/store/$1.png" \
-    "file://$work/$2?date=$3&photo=$4&look=$look${6:+&$6}" 2>/dev/null
+  render "$PWD/store/$1.png" "$SIZE" "file://$work/$2?date=$3&photo=$4&look=$look${6:+&$6}"
   echo "store/$1.png"
+}
+
+# caption <name> <caption> <backdrop photo>: frames store/<name>.png, just
+# rendered, on a blurred photo with a one-line caption above it
+caption() {
+  cp "store/$1.png" "$work/raw-$1.png"
+  text=$(printf %s "$2" | jq -sRr @uri)
+  render "$PWD/store/$1.png" "$SIZE" "file://$work/promo.html?tile=caption&shot=raw-$1.png&caption=$text&backdrop=$3"
+  echo "store/$1.png (captioned)"
 }
 
 # One season per shot, each in a different preset to show the range, on a
@@ -50,3 +67,12 @@ shot screenshot-new-tab-summer new-tab.html 2026-07-14 40 \
   '{"layout":"center","attached":true,"density":"spacious","style":"auto","blur":18,"corners":1.75}'
 shot screenshot-options options.html 2026-01-14 62 \
   '{"layout":"corners","style":"auto","blur":12,"corners":1.75}' tab=look
+
+# The two taglines, on the lead shots
+caption screenshot-new-tab-summer "Open a tab. Step outside." images/winter/img_21.jpg
+caption screenshot-new-tab-autumn "The seasons, one tab at a time." images/spring/img_30.jpg
+
+render "$PWD/store/promo-marquee-1400x560.png" 1400,560 "file://$work/promo.html?tile=marquee"
+echo "store/promo-marquee-1400x560.png"
+render "$PWD/store/promo-small-440x280.png" 440,280 "file://$work/promo.html?tile=small"
+echo "store/promo-small-440x280.png"

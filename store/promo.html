@@ -1,0 +1,70 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Almanac promo art</title>
+    <!-- Source for the store's promo tiles and captioned screenshots, rendered
+         at exact size by scripts/screenshots.sh. Query parameters:
+           tile=marquee | small | caption
+           shot, caption, backdrop   (caption tile only)
+         Paths are relative to the render directory, which has images/,
+         icons/ and the raw screenshots alongside this file. -->
+    <style>
+      html, body { margin: 0; background: #111; overflow: hidden; }
+      body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, sans-serif; color: #fff; }
+      .tile { position: relative; overflow: hidden; }
+      .photo { position: absolute; inset: 0; background-size: cover; background-position: center; }
+      .glass { position: absolute; backdrop-filter: blur(22px) saturate(1.1); background: rgba(28, 20, 16, 0.42); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25); }
+      .name { font-weight: 700; letter-spacing: -0.02em; line-height: 1; }
+
+      /* Marquee 1400x560: the year left to right, spring to winter, blending,
+         with the mark and name on a frosted card */
+      #marquee { width: 1400px; height: 560px; }
+      .strip { position: absolute; top: 0; bottom: 0; background-size: cover; background-position: center; }
+      .strip + .strip { -webkit-mask-image: linear-gradient(90deg, transparent, #000 90px); mask-image: linear-gradient(90deg, transparent, #000 90px); }
+
+      #small { width: 440px; height: 280px; }
+
+      /* Caption 1280x800: a screenshot on a blurred photo with a one-line caption */
+      #caption { width: 1280px; height: 800px; }
+    </style>
+  </head>
+  <body>
+    <div class="tile" id="marquee" hidden>
+      <div class="strip" style="left: 0; width: 410px; background-image: url(images/spring/img_34.jpg)"></div>
+      <div class="strip" style="left: 320px; width: 410px; background-image: url(images/summer/img_40.jpg)"></div>
+      <div class="strip" style="left: 640px; width: 410px; background-image: url(images/autumn/img_09.jpg)"></div>
+      <div class="strip" style="left: 960px; width: 440px; background-image: url(images/winter/img_21.jpg)"></div>
+      <div class="glass" style="left: 50%; top: 50%; transform: translate(-50%, -50%); padding: 44px 64px 48px; border-radius: 28px; text-align: center">
+        <img src="icons/icon.svg" width="96" height="96" />
+        <div class="name" style="font-size: 84px; margin-top: 14px">Almanac</div>
+      </div>
+    </div>
+
+    <div class="tile" id="small" hidden>
+      <div class="photo" style="background-image: url(images/autumn/img_09.jpg)"></div>
+      <div class="glass" style="inset: 24px; border-radius: 22px; display: flex; flex-direction: column; justify-content: center; align-items: center">
+        <img src="icons/icon.svg" width="56" height="56" />
+        <div class="name" style="font-size: 44px; margin-top: 10px">Almanac</div>
+        <div style="font-size: 15px; margin-top: 8px; opacity: 0.92">Open a tab. Step outside.</div>
+      </div>
+    </div>
+
+    <div class="tile" id="caption" hidden>
+      <div class="photo" id="caption-backdrop" style="filter: blur(30px) brightness(0.5); transform: scale(1.1)"></div>
+      <div class="name" id="caption-text" style="position: absolute; left: 0; right: 0; top: 62px; text-align: center; font-size: 56px"></div>
+      <img id="caption-shot" style="position: absolute; left: 50%; top: 160px; transform: translateX(-50%); width: 960px; border-radius: 14px; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5)" />
+    </div>
+
+    <script>
+      const params = new URLSearchParams(location.search);
+      const tile = document.getElementById(params.get("tile"));
+      tile.hidden = false;
+      if (tile.id === "caption") {
+        document.getElementById("caption-text").textContent = params.get("caption");
+        document.getElementById("caption-shot").src = params.get("shot");
+        document.getElementById("caption-backdrop").style.backgroundImage = `url(${params.get("backdrop")})`;
+      }
+    </script>
+  </body>
+</html>
