@@ -28,7 +28,8 @@ function flushSave() {
   cancelPendingSave();
   sendPreview();
   return saveAll().catch((err) => {
-    showStatus("Error saving changes", "error");
+    // Data from a newer version is read-only here; say why
+    showStatus(storedDataIsNewer ? err.message : "Error saving changes", "error");
     console.error(err);
   });
 }
@@ -637,6 +638,7 @@ function handleButtonClick(e) {
               sets[name] = (result[setKey(name)] || { groups: [] }).groups;
             });
             return exportJson(choice, "almanac-backup.json", {
+              schemaVersion: SCHEMA_VERSION,
               settings: meta.settings,
               sets,
             });
@@ -665,17 +667,17 @@ function handleButtonClick(e) {
 async function importAllData(data) {
   // A pending save could restore pre-import state under a stale key
   cancelPendingSave();
-  let importedSettings = backfillSettings({}).settings;
+  let importedSettings = upgradeImportedSettings({}, SCHEMA_VERSION);
   let importedSets;
   // Handle old array format
   if (Array.isArray(data)) {
     importedSets = { [DEFAULT_SET_NAME]: data };
   } else if (data && data.sets) {
-    importedSettings = backfillSettings({ settings: data.settings }).settings;
+    importedSettings = upgradeImportedSettings(data.settings, data.schemaVersion);
     importedSets = data.sets;
   } else if (data && data.groups) {
     // Single-set format from before link sets existed
-    importedSettings = backfillSettings({ settings: data.settings }).settings;
+    importedSettings = upgradeImportedSettings(data.settings, data.schemaVersion);
     importedSets = { [DEFAULT_SET_NAME]: data.groups };
   } else {
     throw new Error("Unrecognized data format");
@@ -695,7 +697,7 @@ async function importAllData(data) {
   const staleKeys = meta.setNames
     .filter((name) => !names.includes(name))
     .map(setKey);
-  meta = { settings: importedSettings, setNames: names };
+  meta = { schemaVersion: SCHEMA_VERSION, settings: importedSettings, setNames: names };
   const items = { [SYNC_META_KEY]: meta };
   names.forEach((name) => {
     items[setKey(name)] = { groups: importedSets[name] };

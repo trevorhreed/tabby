@@ -40,7 +40,9 @@ store/             Store listing copy, screenshots, promo tiles and promo.html (
 
 ## Storage
 
-Settings and each link set live in `chrome.storage.sync` under their own keys (`tabbyMeta`, `tabbySet:<name>`), so each set gets its own per-item quota. The keys keep the original name so existing users' data carries over. Which set a device shows is kept in `chrome.storage.local`, since that's per device. Nothing is sent anywhere else.
+Settings and each link set live in `chrome.storage.sync` under their own keys (`tabbyMeta`, `tabbySet:<name>`), so each set gets its own per-item quota. The keys keep the original name so existing users' data carries over.
+
+`tabbyMeta.schemaVersion` records the shape of the stored data. New settings just need a default in `defaultSettings`; anything that renames or restructures stored data needs `SCHEMA_VERSION` bumped and a step added to `MIGRATIONS` in `storage.js`. Migrations run in memory on load and are written on the next save. A version that finds data from a newer one shows it but won't save over it. Which set a device shows is kept in `chrome.storage.local`, since that's per device. Nothing is sent anywhere else.
 
 ## Publishing
 
