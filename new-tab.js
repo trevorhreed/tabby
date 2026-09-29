@@ -63,7 +63,7 @@ async function switchSet(name) {
   if (name === activeSetName) return;
   activeSetName = name;
   await setActiveSetName(name);
-  renderLinkGroups(await loadSetGroups(name));
+  showLinkGroups(await loadSetGroups(name));
   renderMenu();
 }
 
@@ -115,21 +115,33 @@ function applySettings(settings) {
   applyLayout(settings.look);
 
   document.body.classList.toggle("no-favicons", !settings.showFavicons);
-  document.getElementById("link-groups").style.display = settings.showLinks ? "" : "none";
   // The menu's link sets only apply while links are showing
   if (document.getElementById("menu")) renderMenu();
-
-  // The clock panel only shows when at least one of its segments does
-  const showClock = settings.showDate || settings.showTime;
-  const clockSection = document.getElementById("clock");
-  clockSection.style.display = showClock ? "" : "none";
-  // Layouts rearrange around what's missing (see panels.css)
-  document.body.classList.toggle("no-links", !settings.showLinks);
-  document.body.classList.toggle("no-clock", !showClock);
-  document.body.classList.toggle("nothing-shown", !settings.showLinks && !showClock);
+  updatePanels();
   updateClock(settings);
 
   if (currentRgb) applyLook(settings.look, currentRgb);
+}
+
+// Shows or hides the panels for what there is to show. The links panel
+// hides when links are turned off or the current set has nothing visible
+// (an empty set, or every group and link hidden), and the layouts
+// rearrange around whatever's missing (see panels.css).
+function updatePanels() {
+  const settings = currentSettings;
+  const linksPanel = document.getElementById("link-groups");
+  const showLinks = settings.showLinks && linksPanel.childElementCount > 0;
+  const showClock = settings.showDate || settings.showTime;
+  linksPanel.style.display = showLinks ? "" : "none";
+  document.getElementById("clock").style.display = showClock ? "" : "none";
+  document.body.classList.toggle("no-links", !showLinks);
+  document.body.classList.toggle("no-clock", !showClock);
+  document.body.classList.toggle("nothing-shown", !showLinks && !showClock);
+}
+
+function showLinkGroups(groups) {
+  renderLinkGroups(groups);
+  updatePanels();
 }
 
 async function showPhoto(url) {
@@ -154,7 +166,7 @@ function initPreview() {
       setNames = message.setNames;
       activeSetName = message.setName;
       renderSettings(message.settings);
-      renderLinkGroups(message.groups);
+      showLinkGroups(message.groups);
     } else if (message.type === "image") {
       showPhoto(message.url);
     }
@@ -169,7 +181,7 @@ async function init() {
   renderSettings(meta.settings);
   setInterval(() => updateClock(currentSettings), 100);
 
-  renderLinkGroups(await loadSetGroups(activeSetName));
+  showLinkGroups(await loadSetGroups(activeSetName));
   initMenu();
 
   if (PREVIEW) initPreview();
