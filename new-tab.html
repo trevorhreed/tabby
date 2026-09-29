@@ -18,45 +18,25 @@
         overflow: hidden;
       }
 
-      /* Controls sit straight on the photo, with no strip behind them; a soft
-         shadow keeps the glyphs legible over busy photos. panels.css places
-         them per layout. */
-      .top-controls {
-        --switcher-pad-x: 0.6rem;
+      /* The gear fills its frosted backing (see .top-controls in panels.css)
+         so its hover highlight runs flush to the backing's edges */
+      .menu-toggle {
         display: flex;
         align-items: center;
-        gap: 0.25rem;
-        filter: drop-shadow(0 1px 2px #0005);
-      }
-
-      .settings-link,
-      .set-switcher-toggle {
+        justify-content: center;
+        width: 2.75rem;
+        height: 2.75rem;
+        padding: 0;
+        border: 0;
+        border-radius: inherit;
+        background: none;
         color: var(--text);
-        opacity: 0.8;
+        font-size: 1.5rem;
+        opacity: 0.85;
         cursor: pointer;
-        box-sizing: border-box;
-        display: flex;
-        align-items: center;
-        height: 2.5rem;
-        border-radius: 0.5rem;
         transition:
           opacity 0.3s,
           background-color 0.3s;
-        text-decoration: none;
-      }
-
-      .settings-link:hover,
-      .set-switcher-toggle:hover {
-        opacity: 1;
-        background-color: var(--text-hover);
-      }
-
-      .settings-link {
-        justify-content: center;
-        width: 2.5rem;
-        /* pushed right in a footer row, whether or not the switcher shows */
-        margin-left: auto;
-        font-size: 1.5rem;
 
         /* An SVG rather than the ⚙ character: the glyph sits off-center in
            its line box, so spinning it made it wobble */
@@ -67,73 +47,102 @@
         }
       }
 
-      .settings-link:hover svg {
-        transform: rotate(90deg);
-      }
+      .menu-toggle:hover,
+      .menu-toggle[aria-expanded="true"] {
+        opacity: 1;
+        background-color: var(--text-hover);
 
-      .set-switcher {
-        position: relative;
-        display: flex;
-      }
-
-      .set-switcher-toggle {
-        padding: 0 var(--switcher-pad-x);
-        font-size: 1rem;
-
-        /* says "this opens a menu" */
-        &::after {
-          content: "\25BE";
-          margin-left: 0.35em;
-          font-size: 0.8em;
-          opacity: 0.7;
+        & svg {
+          transform: rotate(90deg);
         }
       }
 
-      .set-switcher-menu {
+      /* Items run edge to edge, so their hover highlight is flush with the
+         menu's sides too */
+      .menu {
         position: absolute;
-        top: calc(100% + 0.75rem);
+        top: calc(100% + 0.5rem);
         right: 0;
-        padding: 0.5rem;
-        display: flex;
-        flex-direction: column;
-        min-width: 8rem;
-        /* cap at the viewport, minus the controls row above it */
+        min-width: 11rem;
         max-height: calc(100vh - 6rem);
+        overflow: auto;
+        padding: 0;
+        border-radius: inherit;
+        /* a backdrop blur can't see past the gear's frosted backing, so the
+           menu stacks the translucent panel color to stay near-opaque */
+        background:
+          linear-gradient(var(--panel-background), var(--panel-background)),
+          linear-gradient(var(--panel-background), var(--panel-background)),
+          var(--panel-background);
+        box-shadow: 0 0.5rem 1.5rem #0004;
       }
 
-      .set-switcher-menu[hidden] {
+      .menu[hidden] {
         display: none;
       }
 
-      .set-switcher-item {
+      .menu-item {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        width: 100%;
+        padding: 0.65rem 1.1rem;
+        border: 0;
+        background: none;
         color: var(--text);
+        font: inherit;
+        font-size: 1rem;
+        text-align: left;
         cursor: pointer;
-        padding: 0.5rem 1rem;
-        border-radius: 0.5rem;
-        transition: background-color 0.3s;
+        transition: background-color 0.2s;
+
+        /* a check column, so set names line up whether or not they're current */
+        &[role="menuitemradio"]::before {
+          content: "";
+          width: 0.9em;
+          text-align: center;
+        }
+
+        &[aria-checked="true"]::before {
+          content: "\2713";
+        }
       }
 
-      .set-switcher-item:hover {
+      /* Settings keeps the same indent as the set names above it */
+      .menu:has([role="menuitemradio"]) .menu-item[role="menuitem"]::before {
+        content: "";
+        width: 0.9em;
+      }
+
+      .menu-item:hover,
+      .menu-item:focus-visible {
         background-color: var(--text-hover);
+        outline: none;
       }
 
-      .set-switcher-item.current {
-        opacity: 0.6;
+      .menu-divider {
+        height: 1px;
+        margin: 0;
+        background: color-mix(in srgb, var(--text) 25%, transparent);
       }
     </style>
   </head>
   <body>
     <div class="top-controls">
-      <div id="set-switcher" class="set-switcher">
-        <a id="set-switcher-toggle" class="set-switcher-toggle" title="Link set"></a>
-        <div id="set-switcher-menu" class="set-switcher-menu panel" hidden></div>
-      </div>
-      <a id="settings-link" class="settings-link" title="Options"
-        ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+      <button
+        id="menu-toggle"
+        class="menu-toggle"
+        title="Link sets and settings"
+        aria-haspopup="menu"
+        aria-expanded="false"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
           <!-- teeth: a thick dashed ring, 8 dashes around r=8 (circumference 16π) -->
           <circle cx="12" cy="12" r="8" stroke-width="4" stroke-dasharray="3.1416 3.1416" />
-          <circle cx="12" cy="12" r="5.5" stroke-width="3" /></svg
-      ></a>
+          <circle cx="12" cy="12" r="5.5" stroke-width="3" />
+        </svg>
+      </button>
+      <div id="menu" class="menu" role="menu" hidden></div>
     </div>
     <!-- Only a box in the Center layout, which puts the clock and links in
          one panel; see .stack in panels.css -->

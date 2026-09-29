@@ -2,7 +2,7 @@
 // and drives it with postMessage instead of storage, so edits show before the
 // debounced save lands. Preview → parent: { type: "ready" } once it's
 // listening, then { type: "image", url, rgb } whenever a photo is showing.
-// Parent → preview: { type: "render", settings, groups, setName, setCount } and
+// Parent → preview: { type: "render", settings, groups, setName, setNames } and
 // { type: "image", url }.
 // Only when actually framed: opened directly, parent is the page itself and
 // its own messages would loop back
@@ -11,41 +11,76 @@ const PREVIEW =
 
 let currentSettings = null;
 let currentRgb = null;
-// With a single link set there's nothing to switch to, so the switcher hides
-let setCount = 0;
+let setNames = [];
+let activeSetName = null;
 
-function initSetSwitcher(setNames, activeSetName) {
-  const toggle = document.getElementById("set-switcher-toggle");
-  const menu = document.getElementById("set-switcher-menu");
-  toggle.textContent = activeSetName;
+// The gear opens a menu: the link sets (when there's more than one to pick
+// from and links are showing), a divider, then Settings. With no sets to
+// offer it goes straight to settings.
+const menuToggle = () => document.getElementById("menu-toggle");
+const menu = () => document.getElementById("menu");
 
-  const renderMenu = (currentName) => {
-    menu.innerHTML = "";
+const showsSets = () => currentSettings.showLinks && setNames.length > 1;
+
+function renderMenu() {
+  const el = menu();
+  el.innerHTML = "";
+  if (showsSets()) {
     setNames.forEach((name) => {
-      const item = document.createElement("a");
-      item.className =
-        "set-switcher-item" + (name === currentName ? " current" : "");
+      const item = document.createElement("button");
+      item.className = "menu-item";
+      item.setAttribute("role", "menuitemradio");
+      item.setAttribute("aria-checked", name === activeSetName);
       item.textContent = name;
-      item.addEventListener("click", async () => {
-        menu.hidden = true;
-        if (name === currentName) return;
-        await setActiveSetName(name);
-        toggle.textContent = name;
-        renderLinkGroups(await loadSetGroups(name));
-        renderMenu(name);
-      });
-      menu.appendChild(item);
+      item.addEventListener("click", () => switchSet(name));
+      el.appendChild(item);
     });
-  };
-  renderMenu(activeSetName);
+    const divider = document.createElement("div");
+    divider.className = "menu-divider";
+    divider.setAttribute("role", "separator");
+    el.appendChild(divider);
+  }
+  const settings = document.createElement("button");
+  settings.className = "menu-item";
+  settings.setAttribute("role", "menuitem");
+  settings.textContent = "Settings";
+  settings.addEventListener("click", openSettings);
+  el.appendChild(settings);
+}
 
-  toggle.addEventListener("click", (e) => {
-    e.preventDefault();
-    menu.hidden = !menu.hidden;
+function setMenuOpen(open) {
+  menu().hidden = !open;
+  menuToggle().setAttribute("aria-expanded", open);
+}
+
+function openSettings() {
+  setMenuOpen(false);
+  chrome.runtime.openOptionsPage();
+}
+
+async function switchSet(name) {
+  setMenuOpen(false);
+  if (name === activeSetName) return;
+  activeSetName = name;
+  await setActiveSetName(name);
+  renderLinkGroups(await loadSetGroups(name));
+  renderMenu();
+}
+
+function initMenu() {
+  renderMenu();
+  menuToggle().addEventListener("click", () => {
+    if (!showsSets()) return openSettings();
+    setMenuOpen(menu().hidden);
+    if (!menu().hidden) menu().querySelector(".menu-item")?.focus();
   });
   document.addEventListener("click", (e) => {
-    if (!e.target.closest(".set-switcher")) {
-      menu.hidden = true;
+    if (!e.target.closest(".top-controls")) setMenuOpen(false);
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !menu().hidden) {
+      setMenuOpen(false);
+      menuToggle().focus();
     }
   });
 }
@@ -70,12 +105,10 @@ function applySettings(settings) {
   applyScales(settings);
   applyLayout(settings.look);
 
-  // The set switcher only affects links, so it hides along with them
   document.body.classList.toggle("no-favicons", !settings.showFavicons);
-  const showLinks = settings.showLinks ? "" : "none";
-  document.getElementById("link-groups").style.display = showLinks;
-  document.getElementById("set-switcher").style.display =
-    settings.showLinks && setCount > 1 ? "" : "none";
+  document.getElementById("link-groups").style.display = settings.showLinks ? "" : "none";
+  // The menu's link sets only apply while links are showing
+  if (document.getElementById("menu")) renderMenu();
 
   // The clock panel only shows when at least one of its segments does
   const showClock = settings.showDate || settings.showTime;
@@ -109,11 +142,10 @@ function initPreview() {
     if (e.source !== parent) return;
     const message = e.data;
     if (message.type === "render") {
-      setCount = message.setCount;
+      setNames = message.setNames;
+      activeSetName = message.setName;
       renderSettings(message.settings);
       renderLinkGroups(message.groups);
-      document.getElementById("set-switcher-toggle").textContent =
-        message.setName;
     } else if (message.type === "image") {
       showPhoto(message.url);
     }
@@ -123,19 +155,13 @@ function initPreview() {
 
 async function init() {
   const meta = await loadMeta();
-  setCount = meta.setNames.length;
+  setNames = meta.setNames;
+  activeSetName = await getActiveSetName(setNames);
   renderSettings(meta.settings);
   setInterval(() => updateClock(currentSettings), 100);
 
-  // Settings link
-  document.getElementById("settings-link").addEventListener("click", (e) => {
-    e.preventDefault();
-    chrome.runtime.openOptionsPage();
-  });
-
-  const activeSetName = await getActiveSetName(meta.setNames);
   renderLinkGroups(await loadSetGroups(activeSetName));
-  initSetSwitcher(meta.setNames, activeSetName);
+  initMenu();
 
   if (PREVIEW) initPreview();
   await showPhoto(getBackgroundImage());
