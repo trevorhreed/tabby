@@ -6,7 +6,9 @@ on:
   pull_request:
     paths:
       - "images/**"
-      - "scripts/**"
+      - "scripts/build-tints.sh"
+      - "scripts/tints.html"
+      # tints.html loads all of it for the averaging code
       - "render.js"
       - ".github/workflows/check-tints.yml"
 
