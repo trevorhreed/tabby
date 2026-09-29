@@ -286,10 +286,11 @@ const LOOK_CORNERS = [0, 0.75, 1.75];
 // cover both layouts, attached and floating, every density, dark and
 // light, and every corner shape.
 // Three per layout, so the settings' three-across grid reads as a row of
-// Corners looks over a row of Center looks. Frosted is the default look.
+// Corners looks over a row of Center looks. Each is named for a material the
+// glass resembles, so the names are all nouns. Frost is the default look.
 const LOOK_PRESETS = [
   {
-    name: "Frosted",
+    name: "Frost",
     layout: "corners", attached: true, density: "comfortable",
     style: "auto", blur: 12, corners: 1.75,
   },
@@ -299,17 +300,17 @@ const LOOK_PRESETS = [
     style: "dark", blur: 24, corners: 0,
   },
   {
-    name: "Milk glass",
+    name: "Porcelain",
     layout: "corners", attached: false, density: "spacious",
     style: "light", blur: 24, corners: 1.75,
   },
   {
-    name: "Focus",
+    name: "Mist",
     layout: "center", attached: true, density: "spacious",
     style: "auto", blur: 18, corners: 1.75,
   },
   {
-    name: "Clear",
+    name: "Glass",
     layout: "center", attached: true, density: "compact",
     style: "auto", blur: 3, corners: 0.75,
   },
