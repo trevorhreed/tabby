@@ -3,6 +3,7 @@
 // page so the settings preview frame matches its parent:
 //   look=<json>      saved look settings; also seeds sample link sets
 //   date=YYYY-MM-DD  the date the pages see, which picks the season's photos
+//   photo=<n>        which of the season's photos to show (img_<n>.jpg)
 //   tab=<name>       settings tab to open (read by options.js itself)
 (() => {
   let params;
@@ -24,7 +25,12 @@
       return FIXED;
     }
   };
-  Math.random = () => 0.5;
+  // getBackgroundImage picks img_<floor(random * count) + 1>, so aim random
+  // at the middle of photo n's slot. The dates used are mid-month in a
+  // pure season, where the season itself doesn't depend on random.
+  const PHOTOS_PER_SEASON = 64;
+  const photo = Number(params.get("photo"));
+  Math.random = () => (photo ? (photo - 0.5) / PHOTOS_PER_SEASON : 0.5);
 
   const store = { sync: {}, local: {} };
   const link = (label, url) => ({ label, url, hide: false });
