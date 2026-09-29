@@ -4,4 +4,4 @@ Chrome extension (Manifest V3): a new tab page with seasonal photos and link set
 
 ## Store screenshots
 
-After any change that affects how the new tab or settings page looks (`new-tab.*`, `options.*`, `panels.css`, `render.js`, images), run `scripts/screenshots.sh` to regenerate `store/*.png`, commit them with the change, and remind the user to upload them in the Chrome Web Store developer dashboard. The store API can't update listing images, so that step is always manual.
+After any change that affects how the new tab or settings page looks (`new-tab.*`, `options.*`, `panels.css`, `render.js`, images), run `scripts/screenshots.sh` to regenerate `store/*.png` (screenshots, captions and promo tiles), commit them with the change, and remind the user to upload them in the Chrome Web Store developer dashboard. The store API can't update listing images, so that step is always manual.
