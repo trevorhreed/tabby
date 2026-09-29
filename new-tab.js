@@ -88,12 +88,15 @@ function initMenu() {
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
 // Applies everything settings control; safe to call again with new settings.
-// A layout change animates: the panels glide and reshape into their new
-// places (see the view transition styles in panels.css).
+// Changes that move the panels (layout, attaching them to the corners)
+// animate: the panels glide and reshape into their new places (see the
+// view transition styles in panels.css).
 function renderSettings(settings) {
-  const layoutChanged =
-    currentSettings && currentSettings.look.layout !== settings.look.layout;
-  if (layoutChanged && document.startViewTransition && !reducedMotion.matches) {
+  const moved =
+    currentSettings &&
+    (currentSettings.look.layout !== settings.look.layout ||
+      currentSettings.look.attached !== settings.look.attached);
+  if (moved && document.startViewTransition && !reducedMotion.matches) {
     document.startViewTransition(() => applySettings(settings));
   } else {
     applySettings(settings);

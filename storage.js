@@ -31,7 +31,7 @@ const defaultSettings = {
     blur: 12,
     corners: 1.75,
     density: "comfortable",
-    // Corners only: panels sit flush in their corners rather than floating
+    // Panels in the screen's corners sit flush in them rather than floating
     attached: true,
   },
 };

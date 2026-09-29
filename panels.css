@@ -171,9 +171,15 @@ body[data-layout="corners"] {
   filter: none;
 }
 
-/* Attached (Corners only): each panel sits flush in its corner, with the
-   corner against the screen edges squared off and only the inner corner
-   rounded */
+/* Attached: each panel in a corner sits flush in it, with the corner
+   against the screen edges squared off and only the inner corner rounded.
+   That's every panel in Corners, and just the gear in Center. */
+body[data-attached] .top-controls {
+  top: 0;
+  right: 0;
+  border-radius: 0 0 0 min(var(--panel-radius), 1rem);
+}
+
 body[data-layout="corners"][data-attached] {
   & .link-groups {
     top: 0;
@@ -187,12 +193,6 @@ body[data-layout="corners"][data-attached] {
     right: 0;
     bottom: 0;
     border-radius: var(--panel-radius) 0 0 0;
-  }
-
-  & .top-controls {
-    top: 0;
-    right: 0;
-    border-radius: 0 0 0 min(var(--panel-radius), 1rem);
   }
 }
 
@@ -359,7 +359,8 @@ body[data-layout="center"] {
    apply it themselves; otherwise the panels would lose their frost for the
    length of the move */
 ::view-transition-group(panel),
-::view-transition-group(clock) {
+::view-transition-group(clock),
+::view-transition-group(controls) {
   backdrop-filter: blur(var(--panel-blur));
   border-radius: var(--panel-radius);
   overflow: hidden;

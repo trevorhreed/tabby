@@ -325,7 +325,7 @@ function lookColors(look, rgb) {
 function applyLayout(look) {
   document.body.dataset.layout = look.layout;
   document.body.dataset.density = look.density;
-  // Only Corners reads it (see panels.css)
+  // Corners attaches every panel, Center just the gear (see panels.css)
   document.body.toggleAttribute("data-attached", look.attached);
 }
 
