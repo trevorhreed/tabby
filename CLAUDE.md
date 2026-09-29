@@ -18,9 +18,14 @@ Users' links live in `chrome.storage.sync` (`tabbyMeta`, `tabbySet:<name>`) and 
 
 ## Releasing
 
-Merging extension content (manifest, pages, scripts, styles, images, icons) to `release` uploads a new version (`.github/workflows/publish.yml`), then submits it for review or leaves it as a dashboard draft. Changes to anything else, like `store/`, docs or workflows, don't publish. Draft is needed when the dashboard needs updating first, which the store API can't do: listing text, screenshots or promo images (`store/`), the icon (`icons/`), or permissions (the Privacy practices tab).
+`.github/workflows/publish.yml` states the decision tree at its top. On a merge to `release`:
 
-- Before merging to `release`, check for those changes and label the PR `release: draft` or `release: submit`. With no label the workflow drafts if `store/` or `icons/` changed since the last `v*` tag, so a permissions change needs the `release: draft` label.
-- After a draft upload, tell the user exactly what to change in the dashboard, pointing at `store/LISTING.md` and the files in `store/`. Once they confirm it's done, run `gh workflow run submit.yml`.
-- To upload again by hand: `gh workflow run publish.yml -f mode=draft` (or `submit`, `auto`).
-- The run's summary says which mode it chose and why: `gh run view <id>`.
+- Nothing in the package changed (workflows, docs, `store/` only): nothing runs. Dashboard-only changes are made and submitted by hand in the developer dashboard.
+- The package changed, plus something the dashboard needs by hand (`store/`, `icons/`, manifest permissions): it uploads a draft.
+- Only the package changed: it uploads and submits for review.
+
+What to do:
+
+- After a draft upload, or when merging a `store/`-only change, tell the user exactly what to update in the dashboard, pointing at `store/LISTING.md` and the files in `store/`. After a draft, once they confirm it's done, run `gh workflow run submit.yml`.
+- To override the automatic choice, label the PR `release: draft` or `release: submit` before merging, or run `gh workflow run publish.yml -f mode=draft` (or `submit`).
+- The run summary says which mode it chose and why: `gh run view <id>`.
