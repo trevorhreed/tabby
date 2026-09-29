@@ -1,4 +1,6 @@
-# Tabby Chrome Extension
+# Almanac Chrome Extension
+
+Formerly Tabby. Named for the old almanacs that followed the turning seasons and the details of each day: Almanac gives every new tab a photo from the current season, your links, and the date and time.
 
 A beautiful Chrome extension that manages your links with seasonal backgrounds and synchronized data.
 
@@ -47,7 +49,7 @@ Images are randomly selected based on the current month with seasonal transition
 ## File Structure
 
 ```
-chrome-extension-tabby/
+chrome-extension-almanac/
 ├── manifest.json          # Extension configuration
 ├── popup.html             # Main popup interface
 ├── popup.js              # Core functionality and Chrome storage
