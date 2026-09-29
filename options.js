@@ -734,11 +734,9 @@ function renderLook() {
     button.setAttribute("aria-pressed", button.dataset.layout === look.layout);
   });
   document.getElementById("look-attached").checked = look.attached;
-  // Corners attaches every panel; Center has only the gear in a corner
+  // In Center only the gear is in a corner, which isn't obvious from the label
   document.getElementById("look-attached-hint").textContent =
-    look.layout === "corners"
-      ? "Each panel sits flush in its corner of the screen"
-      : "The gear sits flush in the top-right corner of the screen";
+    look.layout === "center" ? "The gear sits flush in the top-right corner of the screen" : "";
   document.querySelectorAll("#look-density button").forEach((button) => {
     button.setAttribute("aria-pressed", button.dataset.density === look.density);
   });
