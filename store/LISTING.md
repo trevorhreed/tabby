@@ -9,27 +9,27 @@ Your new tab is a blank page. Almanac swaps it for a seasonal photo and the link
 
 ## Detailed Description
 
-**Your new tab could look a lot better than a search box you never use.**
+**Your new tab could look a lot better.**
 
-Almanac fills it with a full-screen photo that follows the seasons, plus the links you actually click. It's named for the old almanacs that followed the turning year and the details of each day, and it does the same for your new tab: this season's scenery, today's date, and everything you need close at hand.
+Almanac fills it with a full-screen photo that follows the seasons, plus the links you actually click.
 
 🍂 **Photos that follow the calendar**
 Each new tab shows a photo from the current season, and neighboring seasons blend: late winter slips in the odd spring morning. In December, holiday scenes appear more and more often until Christmas Day.
 
 🪟 **Frosted glass that matches the photo**
-Your links and clock sit on panels of tinted glass that take their color from each photo, so they look like part of the picture. Pick one of six looks or make your own: links in the screen's corners or one centered card, glass that's light, dark or matched to each photo, plus blur, corners and spacing. The settings page previews your actual new tab as you change things.
+Your links and clock sit on panels of tinted glass that take their color from each photo, so they look like part of the picture.
 
 🔗 **Your links, organized**
-Sort sites into groups like Work or Reading, drag to reorder them, and hide anything you don't need right now without deleting it. Site icons are optional.
+Sort your sites into groups like Work or Reading, with optional site icons.
 
 💼 **Different links for different computers**
-Keep separate link sets, say Work and Home, and switch between them from the gear menu. Each computer remembers which set it shows.
+Keep separate link sets, say Work and Home, and switch between them. Each computer remembers which set it shows.
 
 ⏰ **A clock that stays out of the way**
-Show the date, the time, both or neither, in 12- or 24-hour format. Size everything from 25% to 200% to suit your screen.
+Show the date, the time, both or neither.
 
 ☁️ **Synced and private**
-Everything syncs through your Chrome account, so there's no new account to create, and you can export your links anytime as a backup. No ads, no tracking, and no servers: your data never leaves Chrome.
+Everything syncs through your Chrome account, and you can export your links anytime as a backup. No ads, no tracking, and no servers: your data never leaves Chrome.
 
 **Getting started:** open a new tab, click the gear in the top-right corner, and choose Settings to add your links.
 
