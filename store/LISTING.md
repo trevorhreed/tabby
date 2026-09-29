@@ -11,19 +11,27 @@ Your new tab is a blank page. Tabby swaps it for a seasonal photo and the links 
 
 **Your new tab could look a lot better than a search box you never use.**
 
-Tabby fills it with a full-screen photo that follows the seasons, and the links you actually click. (Despite the name, not a cat. It does share one cat skill: sitting in the same spot all day, looking nice.)
+Tabby fills it with a full-screen photo that follows the seasons, plus the links you actually click. (Despite the name, it's not a cat. It does share one cat skill: sitting in the same spot all day, looking nice.)
 
 🍂 **Photos that follow the calendar**
-Seasons blend gradually, and in December holiday scenes turn up more and more until Christmas.
+Each new tab shows a photo from the current season, and neighboring seasons blend: late winter slips in the odd spring morning. In December, holiday scenes appear more and more often until Christmas Day.
 
 🪟 **Frosted glass that matches the photo**
-Panels pick up each photo's colors. Choose one of six looks, or tune layout, blur, corners and spacing yourself, with a live preview as you go.
+Your links and clock sit on panels of tinted glass that take their color from each photo, so they look like part of the picture. Pick one of six looks or make your own: links in the screen's corners or one centered card, glass that's light, dark or matched to each photo, plus blur, corners and spacing. The settings page previews your actual new tab as you change things.
 
-🔗 **Your links, your way**
-Group, reorder and hide links, and keep separate sets for work and home. Your work laptop never has to find out about your fantasy football league.
+🔗 **Your links, organized**
+Sort sites into groups like Work or Reading, drag to reorder them, and hide anything you don't need right now without deleting it. Site icons are optional.
 
-☁️ **Syncs through Chrome**
-Signed in to Chrome? You're set. No new account, no ads, no tracking, no servers.
+💼 **Different links for different computers**
+Keep separate link sets, say Work and Home, and switch between them from the gear menu. Each computer remembers which set it shows.
+
+⏰ **A clock that stays out of the way**
+Show the date, the time, both or neither, in 12- or 24-hour format. Size everything from 25% to 200% to suit your screen.
+
+☁️ **Synced and private**
+Everything syncs through your Chrome account, so there's no new account to create, and you can export your links anytime as a backup. No ads, no tracking, and no servers: your data never leaves Chrome.
+
+**Getting started:** open a new tab, click the gear in the top-right corner, and choose Settings to add your links.
 
 ## Category
 Productivity
