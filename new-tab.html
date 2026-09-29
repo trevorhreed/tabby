@@ -67,7 +67,7 @@
         max-height: calc(100vh - 6rem);
         overflow: auto;
         padding: 0;
-        border-radius: inherit;
+        border-radius: min(var(--panel-radius), 1rem);
         /* a backdrop blur can't see past the gear's frosted backing, so the
            menu stacks the translucent panel color to stay near-opaque */
         background:

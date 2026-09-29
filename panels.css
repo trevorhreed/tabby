@@ -171,6 +171,31 @@ body[data-layout="corners"] {
   filter: none;
 }
 
+/* Attached (Corners only): each panel sits flush in its corner, with the
+   corner against the screen edges squared off and only the inner corner
+   rounded */
+body[data-layout="corners"][data-attached] {
+  & .link-groups {
+    top: 0;
+    left: 0;
+    max-width: calc(100vw / var(--panel-scale));
+    max-height: calc(100vh / var(--panel-scale));
+    border-radius: 0 0 var(--panel-radius) 0;
+  }
+
+  & .clock {
+    right: 0;
+    bottom: 0;
+    border-radius: var(--panel-radius) 0 0 0;
+  }
+
+  & .top-controls {
+    top: 0;
+    right: 0;
+    border-radius: 0 0 0 min(var(--panel-radius), 1rem);
+  }
+}
+
 /* Center: clock over links in one panel in the middle of the screen. The
    wrapper becomes the single panel: two touching panels showed a seam of
    photo between them whenever they landed on fractional pixels (browser
