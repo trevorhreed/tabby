@@ -281,11 +281,6 @@ const LOOK_LAYOUTS = ["corners", "center"];
 const LOOK_BLURS = [0, 3, 6, 12, 18, 24, 36, 48, 72];
 // Corner radii in em, spaced so each looks clearly different on a big panel
 const LOOK_CORNERS = [0, 0.75, 1.75];
-
-// The entry in stops closest to value, for saved values from older versions
-// that aren't on the current list
-const nearestStop = (stops, value) =>
-  stops.reduce((best, stop) => (Math.abs(stop - value) < Math.abs(best - value) ? stop : best));
 // Each preset is a whole look (every look setting except size, which
 // depends on the screen), so no two resemble each other: together they
 // cover both layouts, attached and floating, every density, dark and
@@ -380,5 +375,5 @@ function applyLook(look, rgb) {
   root.setProperty("--panel-background", colors.panel + PANEL_ALPHA);
   root.setProperty("--text", colors.text);
   root.setProperty("--panel-blur", `${look.blur}px`);
-  root.setProperty("--panel-radius", `${nearestStop(LOOK_CORNERS, look.corners)}em`);
+  root.setProperty("--panel-radius", `${look.corners}em`);
 }
