@@ -1,79 +1,47 @@
-# Almanac Chrome Extension
+# Almanac (formerly Tabby)
 
-Formerly Tabby. Named for the old almanacs that followed the turning seasons and the details of each day: Almanac gives every new tab a photo from the current season, your links, and the date and time.
+A Chrome extension that replaces the new tab page with a full-screen photo from the current season, your links, and the date and time, on panels of frosted glass tinted to match the photo.
 
-A beautiful Chrome extension that manages your links with seasonal backgrounds and synchronized data.
+It's named for the old almanacs that followed the turning seasons and the details of each day.
 
 ## Features
 
-- **Seasonal Backgrounds**: Automatically changes background images based on the current season
-- **Sync Storage**: Your links are synchronized across all your Chrome instances
-- **Link Management**: Add, delete, and organize links in groups
-- **Beautiful UI**: Dynamic color scheme that adapts to the background image
-- **Export/Import**: Backup and restore your data
-- **Real-time Clock**: Shows current time and date
-
-## Installation
-
-1. Download or clone this extension
-2. Open Chrome and go to `chrome://extensions/`
-3. Enable "Developer mode" in the top right
-4. Click "Load unpacked" and select the extension directory
-5. The extension icon will appear in your toolbar
-
-## Usage
-
-- Click the extension icon to open the popup
-- Browse your organized links by group
-- Right-click any link to delete it
-- Use the "Add New Link" section to add new links
-- Export your data for backup or import from a previous backup
-
-## Data Storage
-
-All data is stored in Chrome's sync storage, which means:
-- Your links sync across all devices where you're signed in to Chrome
-- Data persists even if you uninstall/reinstall the extension
-- Maximum storage is 100KB (plenty for thousands of links)
-
-## Seasonal Images
-
-The extension includes 72 seasonal background images (18 for each season):
-- **Spring**: Fresh and vibrant scenes
-- **Summer**: Bright and warm imagery  
-- **Autumn**: Rich and colorful fall scenes
-- **Winter**: Cool and serene winter landscapes
-
-Images are randomly selected based on the current month with seasonal transitions.
-
-## File Structure
-
-```
-chrome-extension-almanac/
-├── manifest.json          # Extension configuration
-├── popup.html             # Main popup interface
-├── popup.js              # Core functionality and Chrome storage
-├── icons/                # Extension icons
-├── images/               # Seasonal background images
-│   ├── spring/          
-│   ├── summer/
-│   ├── autumn/
-│   └── winter/
-└── README.md            # This file
-```
+- **Seasonal photos.** Each new tab shows a photo from the current season. Neighboring seasons blend near their edges, and in December holiday scenes appear more often until Christmas Day.
+- **Frosted panels.** The links and clock sit on tinted glass whose color comes from the photo. Six presets, or customize the layout (Corners or Center), attaching panels to the screen's corners, density, light or dark glass, blur, corner shape and size.
+- **Links and link sets.** Organize links into groups, reorder them by dragging, and hide items without deleting them. Keep separate link sets (say Work and Home) and pick which one each device shows from the gear menu. Site icons are optional.
+- **Clock.** Date, time, both or neither, in 12- or 24-hour format, with or without seconds.
+- **Live-preview settings.** The settings page shows the real new tab as you change things.
+- **Sync, import and export.** Links and settings sync through Chrome; export and import a set or everything, by file or clipboard.
 
 ## Development
 
-The extension uses:
-- Chrome Extension Manifest V3
-- Chrome Storage Sync API
-- Canvas API for image color extraction
-- Vanilla JavaScript (no frameworks)
+There's no build step: load the repo directory unpacked.
 
-## Privacy
+1. Open `chrome://extensions` and turn on Developer mode.
+2. Click **Load unpacked** and choose this directory.
+3. Open a new tab. The gear in the top-right corner opens the link sets and settings.
 
-This extension:
-- Only stores your link data in Chrome's sync storage
-- Does not transmit any data to external servers
-- Does not require any special permissions beyond storage
-- Background images are bundled locally with the extension
+Without `tints.json` (generated at publish time, and gitignored) the new tab averages each photo's color at runtime instead; generate it locally with `scripts/build-tints.sh`.
+
+## Files
+
+```
+manifest.json      Extension manifest; its name and description are the store title and summary
+new-tab.html/.js   The new tab page, also embedded as the settings page's live preview
+options.html/.js   The settings page
+render.js          Photo, tint, look, clock and link rendering shared by both pages
+panels.css         Panel, layout and transition styles shared by both pages
+storage.js         Sync storage layout, defaults and migrations
+images/            Photos by season: spring, summer, autumn, winter, christmas
+icons/             Extension icons
+scripts/           build-tints.sh (runs at publish), screenshots.sh (store screenshots)
+store/             Store listing copy, screenshots and promo images
+```
+
+## Storage
+
+Settings and each link set live in `chrome.storage.sync` under their own keys (`tabbyMeta`, `tabbySet:<name>`), so each set gets its own per-item quota. The keys keep the original name so existing users' data carries over. Which set a device shows is kept in `chrome.storage.local`, since that's per device. Nothing is sent anywhere else.
+
+## Publishing
+
+Every push to `release` (except store assets and docs) publishes to the Chrome Web Store through `.github/workflows/publish.yml`. The version is the manifest's major.minor plus the workflow run number. After UI changes, run `scripts/screenshots.sh` and upload the new images in the developer dashboard; the store API can't update listing images.
