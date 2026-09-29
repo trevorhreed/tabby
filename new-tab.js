@@ -91,19 +91,23 @@ const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 // Changes that move the panels (layout, attaching them to the corners)
 // animate: the panels glide and reshape into their new places (see the
 // view transition styles in panels.css).
+// Look settings that reshape the panels without moving the gear. Size is
+// left out: its slider fires on every step of a drag, and a transition per
+// step would stutter.
+const RESHAPING_KEYS = ["layout", "density", "corners"];
+
 function renderSettings(settings) {
-  const layoutChanged =
-    currentSettings && currentSettings.look.layout !== settings.look.layout;
-  const attachChanged =
-    currentSettings && currentSettings.look.attached !== settings.look.attached;
-  if ((layoutChanged || attachChanged) && document.startViewTransition && !reducedMotion.matches) {
+  const changed = (key) => currentSettings && currentSettings.look[key] !== settings.look[key];
+  const reshaped = RESHAPING_KEYS.some(changed);
+  const attachChanged = changed("attached");
+  if ((reshaped || attachChanged) && document.startViewTransition && !reducedMotion.matches) {
     // Tells panels.css which panels move, so only those animate (the gear
-    // stays put on a layout change, the Center panel on an attach change)
+    // stays put when the panels reshape, the Center panel on an attach change)
     const root = document.documentElement.classList;
-    root.toggle("moving-layout", layoutChanged);
+    root.toggle("moving-panels", reshaped);
     root.toggle("moving-attach", attachChanged);
     const transition = document.startViewTransition(() => applySettings(settings));
-    transition.finished.finally(() => root.remove("moving-layout", "moving-attach"));
+    transition.finished.finally(() => root.remove("moving-panels", "moving-attach"));
   } else {
     applySettings(settings);
   }
