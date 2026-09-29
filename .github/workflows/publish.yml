@@ -1,23 +1,24 @@
 name: Publish to Chrome Web Store
 
-# Uploads a new version on every push to release, then either submits it for
-# review or leaves it as a draft in the developer dashboard. Draft is for
-# releases that need dashboard changes first (listing text, images, privacy
-# practices), which the store's API can't make; submit the draft afterwards
-# with the "Submit for review" workflow. Which one happens, in order:
-#   1. Run by hand: the "mode" input (draft, submit or auto).
-#   2. The merged PR's label: "release: draft" or "release: submit".
-#   3. Auto: draft if store/ or icons/ changed since the last upload (tagged
-#      v<version>), or if there's no earlier upload to compare with;
-#      otherwise submit.
+# The release decision tree, driven by what the merged change touched:
+#
+#   touches the package (on.push.paths)?
+#   ├─ no  → nothing runs. Dashboard-only changes (store/) are made and
+#   │        submitted by hand in the developer dashboard; nothing to upload.
+#   └─ yes → touches anything the dashboard needs updated by hand
+#            (DASHBOARD_PATHS, or manifest permissions)?
+#            ├─ yes → upload as a draft; submit it with the "Submit for
+#            │        review" workflow once the dashboard is updated
+#            └─ no  → upload and submit for review
+#
+# A "release: draft" or "release: submit" label on the merged PR, or the
+# "mode" input when run by hand, overrides the second question.
 
 on:
   push:
     branches: [release]
-    # Only what ends up in the package: changes to anything else (store
-    # assets, docs, workflows, other scripts) would publish an identical
-    # extension under a new version. build-tints.sh and tints.html make the
-    # package's tints.json.
+    # What goes into the package. build-tints.sh and tints.html generate its
+    # tints.json.
     paths:
       - "manifest.json"
       - "*.html"
@@ -35,9 +36,19 @@ on:
         options: [auto, draft, submit]
         default: auto
 
+env:
+  # Changes here also need hand edits in the dashboard, which the store's API
+  # can't make: listing text and images (store/), and the store icon, which
+  # the dashboard keeps separately from the package's (icons/). Space
+  # separated.
+  DASHBOARD_PATHS: "store/ icons/"
+  # Manifest fields whose changes need the dashboard's Privacy practices tab
+  # updated
+  DASHBOARD_MANIFEST_FIELDS: "permissions optional_permissions host_permissions"
+
 permissions:
-  # tag each upload, and read the merged PR's labels
-  contents: write
+  contents: read
+  # to read the merged PR's labels
   pull-requests: read
 
 jobs:
@@ -46,7 +57,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # full history and tags, to compare with the last upload
+          # enough history to diff the pushed range
           fetch-depth: 0
 
       - name: Decide draft or submit
@@ -54,6 +65,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           INPUT_MODE: ${{ inputs.mode }}
+          # the pushed range; a new branch or a hand run has no "before"
+          BEFORE: ${{ github.event.before }}
         run: |
           MODE="${INPUT_MODE:-auto}"
           REASON="set when run by hand"
@@ -64,13 +77,18 @@ jobs:
             fi
           fi
           if [ "$MODE" = auto ]; then
-            LAST=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)
-            if [ -z "$LAST" ]; then
-              MODE=draft; REASON="no earlier upload tag to compare with"
-            elif ! git diff --quiet "$LAST" HEAD -- store/ icons/; then
-              MODE=draft; REASON="store/ or icons/ changed since $LAST"
+            if [ -z "$BEFORE" ] || [ "$BEFORE" = 0000000000000000000000000000000000000000 ] || ! git cat-file -e "$BEFORE" 2>/dev/null; then
+              BEFORE=HEAD~1
+            fi
+            fields() { git show "$1:manifest.json" | jq -c --arg f "$DASHBOARD_MANIFEST_FIELDS" '[($f | split(" "))[] as $k | .[$k]]'; }
+            # DASHBOARD_PATHS is split on spaces into separate paths on purpose
+            # shellcheck disable=SC2086
+            if ! git diff --quiet "$BEFORE" HEAD -- $DASHBOARD_PATHS; then
+              MODE=draft; REASON="changed $(git diff --name-only "$BEFORE" HEAD -- $DASHBOARD_PATHS | tr '\n' ' ')"
+            elif [ "$(fields "$BEFORE")" != "$(fields HEAD)" ]; then
+              MODE=draft; REASON="manifest permissions changed"
             else
-              MODE=submit; REASON="no store/ or icons/ changes since $LAST"
+              MODE=submit; REASON="nothing that needs the dashboard changed"
             fi
           fi
           echo "mode=$MODE" >> "$GITHUB_OUTPUT"
@@ -112,10 +130,3 @@ jobs:
           CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
           CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
           REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
-
-      # Marks what was uploaded, so the next run's auto mode can tell whether
-      # store content changed since
-      - name: Tag the upload
-        run: |
-          git tag "v${{ steps.version.outputs.version }}"
-          git push origin "v${{ steps.version.outputs.version }}"
