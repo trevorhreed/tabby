@@ -78,9 +78,13 @@ function applySettings(settings) {
     settings.showLinks && setCount > 1 ? "" : "none";
 
   // The clock panel only shows when at least one of its segments does
+  const showClock = settings.showDate || settings.showTime;
   const clockSection = document.getElementById("clock");
-  clockSection.style.display =
-    settings.showDate || settings.showTime ? "" : "none";
+  clockSection.style.display = showClock ? "" : "none";
+  // Layouts rearrange around what's missing (see panels.css)
+  document.body.classList.toggle("no-links", !settings.showLinks);
+  document.body.classList.toggle("no-clock", !showClock);
+  document.body.classList.toggle("nothing-shown", !settings.showLinks && !showClock);
   updateClock(settings);
 
   if (currentRgb) applyLook(settings.look, currentRgb);

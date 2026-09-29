@@ -18,34 +18,45 @@
         overflow: hidden;
       }
 
-      /* Shared panel strip keeps the controls legible over busy photos */
+      /* Controls sit straight on the photo, with no strip behind them; a soft
+         shadow keeps the glyphs legible over busy photos. panels.css places
+         them per layout. */
       .top-controls {
-        position: fixed;
-        top: 1rem;
-        right: 1rem;
+        --switcher-pad-x: 0.6rem;
         display: flex;
         align-items: center;
         gap: 0.25rem;
-        padding: 0.25rem;
-        border-radius: 0.75rem;
-        /* the panel class's overflow: auto would clip the dropdown menu */
-        overflow: visible;
+        filter: drop-shadow(0 1px 2px #0005);
       }
 
-      .settings-link {
+      .settings-link,
+      .set-switcher-toggle {
         color: var(--text);
         opacity: 0.8;
         cursor: pointer;
         box-sizing: border-box;
         display: flex;
         align-items: center;
-        justify-content: center;
         height: 2.5rem;
-        width: 2.5rem;
         border-radius: 0.5rem;
-        transition: opacity 0.3s;
-        font-size: 1.5rem;
+        transition:
+          opacity 0.3s,
+          background-color 0.3s;
         text-decoration: none;
+      }
+
+      .settings-link:hover,
+      .set-switcher-toggle:hover {
+        opacity: 1;
+        background-color: var(--text-hover);
+      }
+
+      .settings-link {
+        justify-content: center;
+        width: 2.5rem;
+        /* pushed right in a footer row, whether or not the switcher shows */
+        margin-left: auto;
+        font-size: 1.5rem;
 
         /* An SVG rather than the ⚙ character: the glyph sits off-center in
            its line box, so spinning it made it wobble */
@@ -56,12 +67,8 @@
         }
       }
 
-      .settings-link:hover {
-        opacity: 1;
-
-        & svg {
-          transform: rotate(90deg);
-        }
+      .settings-link:hover svg {
+        transform: rotate(90deg);
       }
 
       .set-switcher {
@@ -70,23 +77,16 @@
       }
 
       .set-switcher-toggle {
-        color: var(--text);
-        opacity: 0.8;
-        cursor: pointer;
-        box-sizing: border-box;
-        display: flex;
-        align-items: center;
-        /* matches the gear button's height so the pair sits level */
-        height: 2.5rem;
-        padding: 0 1rem;
-        border-radius: 0.5rem;
-        transition: opacity 0.3s;
+        padding: 0 var(--switcher-pad-x);
         font-size: 1rem;
-        text-decoration: none;
-      }
 
-      .set-switcher-toggle:hover {
-        opacity: 1;
+        /* says "this opens a menu" */
+        &::after {
+          content: "\25BE";
+          margin-left: 0.35em;
+          font-size: 0.8em;
+          opacity: 0.7;
+        }
       }
 
       .set-switcher-menu {
@@ -97,8 +97,7 @@
         display: flex;
         flex-direction: column;
         min-width: 8rem;
-        /* the panel class's 100% cap would resolve against the 2.5rem
-           switcher row; cap at the viewport instead, minus the strip above */
+        /* cap at the viewport, minus the controls row above it */
         max-height: calc(100vh - 6rem);
       }
 
@@ -129,7 +128,7 @@
     <div class="stack">
       <section id="link-groups" class="link-groups panel"></section>
       <section id="clock" class="clock panel"><span></span></section>
-      <div class="top-controls panel">
+      <div class="top-controls">
         <div id="set-switcher" class="set-switcher">
           <a id="set-switcher-toggle" class="set-switcher-toggle" title="Link set"></a>
           <div id="set-switcher-menu" class="set-switcher-menu panel" hidden></div>
