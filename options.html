@@ -275,10 +275,11 @@
         display: none;
       }
 
-      /* Presets as buttons, two or three to a row */
+      /* Presets as buttons, three to a row (the drawer's width fits three of
+         the longest name, "Milk glass") */
       .preset-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+        grid-template-columns: repeat(3, 1fr);
         gap: 8px;
       }
 
