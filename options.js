@@ -379,8 +379,19 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
-function handleSettingChange(e) {
+async function handleSettingChange(e) {
   const key = SETTING_CHECKBOXES[e.target.id];
+  // Site icons need the optional favicon permission; Chrome asks for it
+  // here, while the click still counts as the user's gesture. Declined,
+  // the box goes back to off.
+  if (key === "showFavicons" && e.target.checked) {
+    const granted = await chrome.permissions.request(FAVICON_PERMISSION);
+    if (!granted) {
+      e.target.checked = false;
+      return;
+    }
+    faviconsAllowed = true;
+  }
   if (key) {
     meta.settings[key] = e.target.checked;
   }

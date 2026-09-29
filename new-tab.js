@@ -159,10 +159,12 @@ function initPreview() {
     },
     true,
   );
-  window.addEventListener("message", (e) => {
+  window.addEventListener("message", async (e) => {
     if (e.source !== parent) return;
     const message = e.data;
     if (message.type === "render") {
+      // Site icons may have just been allowed on the settings page
+      if (message.settings.showFavicons) await checkFaviconPermission();
       setNames = message.setNames;
       activeSetName = message.setName;
       renderSettings(message.settings);
@@ -178,6 +180,7 @@ async function init() {
   const meta = await loadMeta();
   setNames = meta.setNames;
   activeSetName = await getActiveSetName(setNames);
+  await checkFaviconPermission();
   renderSettings(meta.settings);
   setInterval(() => updateClock(currentSettings), 100);
 
