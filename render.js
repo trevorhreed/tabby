@@ -275,16 +275,18 @@ const LOOK_CORNERS = [0, 0.75, 1.75, 4];
 // that aren't on the current list
 const nearestStop = (stops, value) =>
   stops.reduce((best, stop) => (Math.abs(stop - value) < Math.abs(best - value) ? stop : best));
+// Each preset differs from the others in at least two of style, blur and
+// corners, and is named for how it looks rather than for one setting (the
+// Style and Corners controls already cover "Follow system", "Square" and
+// "Pill" on their own). Frosted matches the default look.
 const LOOK_PRESETS = [
-  { name: "Clear glass", style: "auto", blur: 6, corners: 0.75 },
   { name: "Frosted", style: "auto", blur: 12, corners: 1.75 },
-  { name: "Heavy frost", style: "auto", blur: 24, corners: 1.75 },
-  { name: "Smoked", style: "dark", blur: 12, corners: 0.75 },
-  { name: "Tinted", style: "dark", blur: 18, corners: 1.75 },
-  { name: "Milk glass", style: "light", blur: 18, corners: 1.75 },
-  { name: "Square", style: "auto", blur: 6, corners: 0 },
-  { name: "Pill", style: "auto", blur: 12, corners: 4 },
-  { name: "Follow system", style: "system", blur: 12, corners: 1.75 },
+  { name: "Clear glass", style: "auto", blur: 6, corners: 0.75 },
+  { name: "Heavy frost", style: "auto", blur: 36, corners: 1.75 },
+  { name: "Smoked", style: "dark", blur: 18, corners: 0.75 },
+  { name: "Milk glass", style: "light", blur: 24, corners: 1.75 },
+  { name: "Pebble", style: "auto", blur: 18, corners: 4 },
+  { name: "Slate", style: "dark", blur: 24, corners: 0 },
 ];
 // Relative luminance above this means the photo is bright enough that a
 // light panel with dark text reads better than the usual dark panel
