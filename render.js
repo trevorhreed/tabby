@@ -267,7 +267,7 @@ const LOOK_STYLES = ["auto", "dark", "light", "system"];
 const LOOK_DENSITIES = ["compact", "comfortable", "spacious"];
 const LOOK_LAYOUTS = ["corners", "center"];
 // Blur choices in px; the settings slider steps through these
-const LOOK_BLURS = [0, 6, 12, 18, 24, 36, 48, 72];
+const LOOK_BLURS = [0, 3, 6, 12, 18, 24, 36, 48, 72];
 // Corner radii in em, spaced so each looks clearly different on a big panel
 const LOOK_CORNERS = [0, 0.75, 1.75];
 
