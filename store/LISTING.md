@@ -1,4 +1,4 @@
-# Almanac - Chrome Web Store Listing
+# Almanac (formerly Tabby) - Chrome Web Store Listing
 
 ID: ohdgighchcjhbbefopcoljmjaaodngcn
 
