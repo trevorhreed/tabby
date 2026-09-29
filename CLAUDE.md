@@ -27,5 +27,5 @@ Users' links live in `chrome.storage.sync` (`tabbyMeta`, `tabbySet:<name>`) and 
 What to do:
 
 - After a draft upload, or when merging a `store/`-only change, tell the user exactly what to update in the dashboard, pointing at `store/LISTING.md` and the files in `store/`. After a draft, once they confirm it's done, run `gh workflow run submit.yml`.
-- To override the automatic choice, label the PR `release: draft` or `release: submit` before merging, or run `gh workflow run publish.yml -f mode=draft` (or `submit`).
+- To override the automatic choice, for example when the dashboard needs something the repo doesn't show, run `gh workflow run publish.yml -f mode=draft` (or `submit`) after merging.
 - The run summary says which mode it chose and why: `gh run view <id>`.

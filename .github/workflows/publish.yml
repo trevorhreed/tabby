@@ -11,8 +11,7 @@ name: Publish to Chrome Web Store
 #            │        review" workflow once the dashboard is updated
 #            └─ no  → upload and submit for review
 #
-# A "release: draft" or "release: submit" label on the merged PR, or the
-# "mode" input when run by hand, overrides the second question.
+# Run by hand, the "mode" input overrides the second question.
 
 on:
   push:
@@ -48,8 +47,6 @@ env:
 
 permissions:
   contents: read
-  # to read the merged PR's labels
-  pull-requests: read
 
 jobs:
   publish:
@@ -63,19 +60,12 @@ jobs:
       - name: Decide draft or submit
         id: mode
         env:
-          GH_TOKEN: ${{ github.token }}
           INPUT_MODE: ${{ inputs.mode }}
           # the pushed range; a new branch or a hand run has no "before"
           BEFORE: ${{ github.event.before }}
         run: |
           MODE="${INPUT_MODE:-auto}"
           REASON="set when run by hand"
-          if [ "$MODE" = auto ] && [ "${{ github.event_name }}" = push ]; then
-            LABELS=$(gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/pulls" --jq '.[0].labels[].name' 2>/dev/null || true)
-            if echo "$LABELS" | grep -qx "release: draft"; then MODE=draft; REASON='PR labeled "release: draft"'
-            elif echo "$LABELS" | grep -qx "release: submit"; then MODE=submit; REASON='PR labeled "release: submit"'
-            fi
-          fi
           if [ "$MODE" = auto ]; then
             if [ -z "$BEFORE" ] || [ "$BEFORE" = 0000000000000000000000000000000000000000 ] || ! git cat-file -e "$BEFORE" 2>/dev/null; then
               BEFORE=HEAD~1
