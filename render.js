@@ -327,6 +327,10 @@ function applyLayout(look) {
   document.body.dataset.density = look.density;
   // Corners attaches every panel, Center just the gear (see panels.css)
   document.body.toggleAttribute("data-attached", look.attached);
+  // Copied to <html> for the view transition, whose pseudo-elements hang off
+  // the root rather than body
+  document.documentElement.dataset.layout = look.layout;
+  document.documentElement.toggleAttribute("data-attached", look.attached);
 }
 
 function applyLook(look, rgb) {

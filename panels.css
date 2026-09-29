@@ -68,7 +68,9 @@ body.no-favicons a.link .favicon {
   background: var(--panel-background);
   border-radius: var(--panel-radius);
   backdrop-filter: blur(var(--panel-blur));
-  padding: var(--space-3);
+  /* at least 30% of the corner radius, about how far a rounded corner cuts
+     in along the diagonal, so big radii never clip text in the corners */
+  padding: max(var(--space-3), calc(var(--panel-radius) * 0.3));
   max-height: 100%;
   overflow: auto;
 }
@@ -147,7 +149,9 @@ body[data-layout="corners"] {
     position: fixed;
     right: var(--space-3);
     bottom: var(--space-3);
-    padding: var(--space-2) var(--space-3);
+    /* a one-line panel's ends curve in up to half its height, so the sides
+       also pad by half the radius to keep the text clear of a pill's ends */
+    padding: var(--space-2) max(var(--space-3), calc(var(--panel-radius) * 0.5));
 
     & > span {
       font-size: 2rem;
@@ -364,6 +368,23 @@ body[data-layout="center"] {
   backdrop-filter: blur(var(--panel-blur));
   border-radius: var(--panel-radius);
   overflow: hidden;
+}
+
+/* The moving groups take the destination's shape, including attached
+   corners, rather than rounding every corner and snapping square at the
+   end */
+:root[data-layout="corners"][data-attached] {
+  &::view-transition-group(panel) {
+    border-radius: 0 0 var(--panel-radius) 0;
+  }
+
+  &::view-transition-group(clock) {
+    border-radius: var(--panel-radius) 0 0 0;
+  }
+}
+
+:root[data-attached]::view-transition-group(controls) {
+  border-radius: 0 0 0 min(var(--panel-radius), 1rem);
 }
 
 ::view-transition-old(*) {
