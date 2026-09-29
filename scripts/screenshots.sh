@@ -37,15 +37,16 @@ shot() {
 }
 
 # One season per shot, each in a different preset to show the range, on a
-# photo that says the season at a glance: red forest path, cherry tree in
-# bloom, beach umbrellas, snowy firs
+# photo that says the season at a glance: red forest path, snowy firs,
+# blossoms against blue sky, beach umbrellas. The settings shot uses a
+# different winter photo (a frosted tree) so no photo appears twice.
 shot screenshot-new-tab-autumn new-tab.html 2026-10-14 9 \
   '{"layout":"corners","attached":true,"density":"comfortable","style":"auto","blur":12,"corners":1.75}'
 shot screenshot-new-tab-winter new-tab.html 2026-01-14 21 \
   '{"layout":"corners","attached":false,"density":"spacious","style":"light","blur":24,"corners":1.75}'
-shot screenshot-new-tab-spring new-tab.html 2026-04-14 34 \
+shot screenshot-new-tab-spring new-tab.html 2026-04-14 30 \
   '{"layout":"corners","attached":true,"density":"compact","style":"dark","blur":24,"corners":0}'
 shot screenshot-new-tab-summer new-tab.html 2026-07-14 40 \
   '{"layout":"center","attached":true,"density":"spacious","style":"auto","blur":18,"corners":1.75}'
-shot screenshot-options options.html 2026-10-14 9 \
+shot screenshot-options options.html 2026-01-14 62 \
   '{"layout":"corners","style":"auto","blur":12,"corners":1.75}' tab=look
