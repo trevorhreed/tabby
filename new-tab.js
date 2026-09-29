@@ -97,13 +97,13 @@ function renderSettings(settings) {
   const attachChanged =
     currentSettings && currentSettings.look.attached !== settings.look.attached;
   if ((layoutChanged || attachChanged) && document.startViewTransition && !reducedMotion.matches) {
-    // The gear sits in the same corner in both layouts, so it only joins the
-    // transition when attaching actually moves it
-    document.documentElement.classList.toggle("moving-gear", attachChanged);
+    // Tells panels.css which panels move, so only those animate (the gear
+    // stays put on a layout change, the Center panel on an attach change)
+    const root = document.documentElement.classList;
+    root.toggle("moving-layout", layoutChanged);
+    root.toggle("moving-attach", attachChanged);
     const transition = document.startViewTransition(() => applySettings(settings));
-    transition.finished.finally(() =>
-      document.documentElement.classList.remove("moving-gear"),
-    );
+    transition.finished.finally(() => root.remove("moving-layout", "moving-attach"));
   } else {
     applySettings(settings);
   }
